@@ -1,0 +1,687 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_menu"]
+[ext_resource type="Theme" path="res://scenes/ui_theme.tres" id="2_theme"]
+
+[sub_resource type="StyleBoxFlat" id="danger_normal"]
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
+bg_color = Color(0.22, 0.09, 0.09, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.66, 0.27, 0.25, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="danger_hover"]
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
+bg_color = Color(0.34, 0.13, 0.13, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.95, 0.44, 0.38, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="danger_pressed"]
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
+bg_color = Color(0.16, 0.06, 0.06, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85, 0.35, 0.3, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="MainMenu" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme = ExtResource("2_theme")
+script = ExtResource("1_menu")
+
+[node name="Background" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.08, 0.12, 0.08, 1)
+
+[node name="Center" type="CenterContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="Center"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="Center/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 48
+text = "Выживальщик"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="Center/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Арена монстров"
+horizontal_alignment = 1
+
+[node name="PlayButton" type="Button" parent="Center/VBox"]
+custom_minimum_size = Vector2(300, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Играть"
+
+[node name="RecordsButton" type="Button" parent="Center/VBox"]
+custom_minimum_size = Vector2(300, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Рекорды"
+
+[node name="SettingsButton" type="Button" parent="Center/VBox"]
+custom_minimum_size = Vector2(300, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Настройки"
+
+[node name="ShopButton" type="Button" parent="Center/VBox"]
+custom_minimum_size = Vector2(300, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Магазин"
+
+[node name="ProfileButton" type="Button" parent="Center/VBox"]
+custom_minimum_size = Vector2(300, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Профиль"
+
+[node name="QuitButton" type="Button" parent="Center/VBox"]
+custom_minimum_size = Vector2(300, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Выход"
+
+[node name="BestLabel" type="Label" parent="Center/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Рекордов пока нет"
+horizontal_alignment = 1
+
+[node name="Dimmer" type="ColorRect" parent="."]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.65)
+
+[node name="RecordsPanel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(640.0, 540.0)
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -270.0
+offset_right = 320.0
+offset_bottom = 270.0
+
+[node name="VBox" type="VBoxContainer" parent="RecordsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="RecordsPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Рекорды"
+horizontal_alignment = 1
+
+[node name="BestStatsLabel" type="Label" parent="RecordsPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Лучшее время: --:--"
+
+[node name="HistoryLabel" type="Label" parent="RecordsPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Последние забеги:"
+
+[node name="BackButton" type="Button" parent="RecordsPanel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Назад"
+
+[node name="CharacterPanel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(680.0, 640.0)
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -320.0
+offset_right = 340.0
+offset_bottom = 320.0
+
+[node name="VBox" type="VBoxContainer" parent="CharacterPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="CharacterPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Герой и сложность"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="CharacterPanel/VBox"]
+custom_minimum_size = Vector2(0, 240)
+layout_mode = 2
+size_flags_vertical = 3
+follow_focus = true
+horizontal_scroll_mode = 0
+clip_contents = true
+
+[node name="CharacterList" type="VBoxContainer" parent="CharacterPanel/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="DifficultyLabel" type="Label" parent="CharacterPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Сложность:"
+horizontal_alignment = 1
+
+[node name="DifficultyBox" type="HBoxContainer" parent="CharacterPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EasyButton" type="Button" parent="CharacterPanel/VBox/DifficultyBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Лёгкая (скоро)"
+
+[node name="NormalButton" type="Button" parent="CharacterPanel/VBox/DifficultyBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Нормальная"
+
+[node name="HardButton" type="Button" parent="CharacterPanel/VBox/DifficultyBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Сложная (скоро)"
+
+[node name="MapLabel" type="Label" parent="CharacterPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Карта:"
+horizontal_alignment = 1
+
+[node name="MapBox" type="HBoxContainer" parent="CharacterPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ForestButton" type="Button" parent="CharacterPanel/VBox/MapBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Лес"
+
+[node name="BogButton" type="Button" parent="CharacterPanel/VBox/MapBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Топкие болота"
+
+[node name="ArenaButton" type="Button" parent="CharacterPanel/VBox/MapBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Арена"
+
+[node name="DifficultyDesc" type="Label" parent="CharacterPanel/VBox"]
+custom_minimum_size = Vector2(600, 58)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Стандартный баланс: как задумано авторами."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="StartButton" type="Button" parent="CharacterPanel/VBox"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "В бой!"
+
+[node name="BackButton" type="Button" parent="CharacterPanel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Назад"
+
+[node name="ShopPanel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(680.0, 580.0)
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -290.0
+offset_right = 340.0
+offset_bottom = 290.0
+
+[node name="VBox" type="VBoxContainer" parent="ShopPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="ShopPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Магазин улучшений"
+horizontal_alignment = 1
+
+[node name="ShopGoldLabel" type="Label" parent="ShopPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Золото: 0"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="ShopPanel/VBox"]
+custom_minimum_size = Vector2(0, 360)
+layout_mode = 2
+size_flags_vertical = 3
+follow_focus = true
+horizontal_scroll_mode = 0
+clip_contents = true
+
+[node name="ShopList" type="VBoxContainer" parent="ShopPanel/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="BackButton" type="Button" parent="ShopPanel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Назад"
+
+[node name="ProfilePanel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(600.0, 520.0)
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -260.0
+offset_right = 300.0
+offset_bottom = 260.0
+
+[node name="VBox" type="VBoxContainer" parent="ProfilePanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="ProfilePanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Профиль"
+horizontal_alignment = 1
+
+[node name="ProfileStats" type="Label" parent="ProfilePanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Всего забегов: 0"
+
+[node name="AchievementsButton" type="Button" parent="ProfilePanel/VBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Достижения"
+
+[node name="BackButton" type="Button" parent="ProfilePanel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Назад"
+
+[node name="AchievementsPanel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(680.0, 600.0)
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -300.0
+offset_right = 340.0
+offset_bottom = 300.0
+
+[node name="VBox" type="VBoxContainer" parent="AchievementsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="AchievementsPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Достижения"
+horizontal_alignment = 1
+
+[node name="ProgressLabel" type="Label" parent="AchievementsPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 16
+text = "Открыто 0 из 20"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="AchievementsPanel/VBox"]
+clip_contents = true
+custom_minimum_size = Vector2(0, 400)
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="AchievementsList" type="VBoxContainer" parent="AchievementsPanel/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="BackButton" type="Button" parent="AchievementsPanel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Назад"
+
+[node name="SettingsPanel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(760.0, 486.0)
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -380.0
+offset_top = -280.0
+offset_right = 380.0
+offset_bottom = 280.0
+
+[node name="VBox" type="VBoxContainer" parent="SettingsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="SettingsPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Настройки"
+horizontal_alignment = 1
+
+[node name="Columns" type="HBoxContainer" parent="SettingsPanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="Left" type="VBoxContainer" parent="SettingsPanel/VBox/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="VolumeLabel" type="Label" parent="SettingsPanel/VBox/Columns/Left"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Громкость звуков"
+
+[node name="VolumeSlider" type="HSlider" parent="SettingsPanel/VBox/Columns/Left"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+max_value = 100.0
+value = 80.0
+
+[node name="ScreenLabel" type="Label" parent="SettingsPanel/VBox/Columns/Left"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Режим экрана"
+
+[node name="ScreenBox" type="HBoxContainer" parent="SettingsPanel/VBox/Columns/Left"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="WindowedButton" type="Button" parent="SettingsPanel/VBox/Columns/Left/ScreenBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Оконный"
+
+[node name="FullscreenButton" type="Button" parent="SettingsPanel/VBox/Columns/Left/ScreenBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Во весь экран"
+
+[node name="BorderlessButton" type="Button" parent="SettingsPanel/VBox/Columns/Left/ScreenBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Без рамки"
+
+[node name="ShakeLabel" type="Label" parent="SettingsPanel/VBox/Columns/Left"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Тряска экрана"
+
+[node name="ShakeBox" type="HBoxContainer" parent="SettingsPanel/VBox/Columns/Left"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ShakeNormalButton" type="Button" parent="SettingsPanel/VBox/Columns/Left/ShakeBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Обычная"
+
+[node name="ShakeLowButton" type="Button" parent="SettingsPanel/VBox/Columns/Left/ShakeBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Слабая"
+
+[node name="ShakeOffButton" type="Button" parent="SettingsPanel/VBox/Columns/Left/ShakeBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Выключить"
+
+[node name="Right" type="VBoxContainer" parent="SettingsPanel/VBox/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="LanguageLabel" type="Label" parent="SettingsPanel/VBox/Columns/Right"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Язык"
+
+[node name="LanguageBox" type="HBoxContainer" parent="SettingsPanel/VBox/Columns/Right"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="RuButton" type="Button" parent="SettingsPanel/VBox/Columns/Right/LanguageBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "▶ Русский"
+
+[node name="EnButton" type="Button" parent="SettingsPanel/VBox/Columns/Right/LanguageBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "English"
+
+[node name="QualityLabel" type="Label" parent="SettingsPanel/VBox/Columns/Right"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Качество графики"
+
+[node name="QualityBox" type="HBoxContainer" parent="SettingsPanel/VBox/Columns/Right"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LowButton" type="Button" parent="SettingsPanel/VBox/Columns/Right/QualityBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Низкое"
+
+[node name="MediumButton" type="Button" parent="SettingsPanel/VBox/Columns/Right/QualityBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Среднее"
+
+[node name="HighButton" type="Button" parent="SettingsPanel/VBox/Columns/Right/QualityBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Высокое"
+
+[node name="FpsCheck" type="CheckButton" parent="SettingsPanel/VBox/Columns/Right"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Показ FPS"
+
+[node name="UIScaleLabel" type="Label" parent="SettingsPanel/VBox/Columns/Right"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Масштаб интерфейса"
+
+[node name="UIScaleBox" type="HBoxContainer" parent="SettingsPanel/VBox/Columns/Right"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SmallButton" type="Button" parent="SettingsPanel/VBox/Columns/Right/UIScaleBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Мелкий"
+
+[node name="NormalButton" type="Button" parent="SettingsPanel/VBox/Columns/Right/UIScaleBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Обычный"
+
+[node name="LargeButton" type="Button" parent="SettingsPanel/VBox/Columns/Right/UIScaleBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Крупный"
+
+[node name="DangerBox" type="HBoxContainer" parent="SettingsPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="DangerLabel" type="Label" parent="SettingsPanel/VBox/DangerBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.62, 0.58, 1)
+theme_override_font_sizes/font_size = 15
+text = "Сброс данных"
+vertical_alignment = 1
+
+[node name="ResetRecordsButton" type="Button" parent="SettingsPanel/VBox/DangerBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.76, 0.72, 1)
+theme_override_colors/font_hover_color = Color(1, 0.86, 0.82, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.7, 0.66, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("danger_normal")
+theme_override_styles/hover = SubResource("danger_hover")
+theme_override_styles/pressed = SubResource("danger_pressed")
+text = "Сбросить рекорды"
+
+[node name="ResetProgressButton" type="Button" parent="SettingsPanel/VBox/DangerBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.76, 0.72, 1)
+theme_override_colors/font_hover_color = Color(1, 0.86, 0.82, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.7, 0.66, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("danger_normal")
+theme_override_styles/hover = SubResource("danger_hover")
+theme_override_styles/pressed = SubResource("danger_pressed")
+text = "Сбросить весь прогресс"
+
+[node name="BackButton" type="Button" parent="SettingsPanel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Назад"
+
+[node name="ConfirmPanel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(620.0, 330.0)
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -310.0
+offset_top = -165.0
+offset_right = 310.0
+offset_bottom = 165.0
+
+[node name="VBox" type="VBoxContainer" parent="ConfirmPanel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="TitleLabel" type="Label" parent="ConfirmPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.55, 0.5, 1)
+theme_override_font_sizes/font_size = 26
+text = "Сбросить прогресс?"
+horizontal_alignment = 1
+
+[node name="DescLabel" type="Label" parent="ConfirmPanel/VBox"]
+custom_minimum_size = Vector2(560.0, 0.0)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 16
+text = "Предупреждение"
+autowrap_mode = 2
+
+[node name="Buttons" type="HBoxContainer" parent="ConfirmPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="CancelButton" type="Button" parent="ConfirmPanel/VBox/Buttons"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 17
+text = "Отмена"
+
+[node name="AcceptButton" type="Button" parent="ConfirmPanel/VBox/Buttons"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.76, 0.72, 1)
+theme_override_colors/font_hover_color = Color(1, 0.86, 0.82, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.7, 0.66, 1)
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("danger_normal")
+theme_override_styles/hover = SubResource("danger_hover")
+theme_override_styles/pressed = SubResource("danger_pressed")
+text = "Сбросить"

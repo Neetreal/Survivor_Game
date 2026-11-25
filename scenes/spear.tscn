@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/spear.gd" id="1_spear"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_spear"]
+size = Vector2(7, 34)
+
+[node name="Spear" type="Area2D"]
+z_index = 2
+script = ExtResource("1_spear")
+
+[node name="Body" type="Sprite2D" parent="."]
+visible = false
+
+[node name="Visual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-3, -17, 3, -17, 3, 12, 0, 19, -3, 12)
+color = Color(0.75, 0.9, 1, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_spear")

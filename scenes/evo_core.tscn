@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/evo_core.gd" id="1_core"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_core"]
+radius = 18.0
+
+[node name="EvoCore" type="Area2D"]
+script = ExtResource("1_core")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_core")
+
+[node name="Body" type="Sprite2D" parent="."]
+visible = false
+
+[node name="Visual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, -18, 13, 0, 0, 18, -13, 0)
+color = Color(1, 0.78, 0.35, 1)

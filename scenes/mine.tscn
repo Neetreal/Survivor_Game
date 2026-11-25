@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/mine.gd" id="1_mine"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_mine"]
+radius = 22.0
+
+[node name="Mine" type="Area2D"]
+z_index = -1
+script = ExtResource("1_mine")
+
+[node name="Body" type="Sprite2D" parent="."]
+visible = false
+
+[node name="Visual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-9, -9, 9, -9, 9, 9, -9, 9)
+color = Color(0.9, 0.3, 0.25, 0.55)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_mine")

@@ -1,0 +1,40 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
+radius = 14.0
+
+[node name="Player" type="CharacterBody2D" groups=["player"]]
+process_mode = 1
+script = ExtResource("1_player")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_1")
+
+[node name="FrostVisual" type="Polygon2D" parent="."]
+visible = false
+z_index = -1
+polygon = PackedVector2Array(130, 0, 120, 50, 99, 99, 50, 120, 0, 130, -50, 120, -99, 99, -120, 50, -130, 0, -120, -50, -99, -99, -50, -120, 0, -130, 50, -120, 99, -99, 120, -50)
+color = Color(0.5, 0.85, 1, 0.12)
+
+[node name="Body" type="Sprite2D" parent="."]
+visible = false
+
+[node name="Visual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(14, 0, 12.9, 5.4, 9.9, 9.9, 5.4, 12.9, 0, 14, -5.4, 12.9, -9.9, 9.9, -12.9, 5.4, -14, 0, -12.9, -5.4, -9.9, -9.9, -5.4, -12.9, 0, -14, 5.4, -12.9, 9.9, -9.9, 12.9, -5.4)
+color = Color(0.3, 0.6, 1, 1)
+
+[node name="Direction" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(0, -18, 6, -6, -6, -6)
+color = Color(1, 1, 1, 1)
+
+[node name="Camera2D" type="Camera2D" parent="."]
+enabled = true
+position_smoothing_enabled = true
+limit_left = -1600
+limit_top = -1600
+limit_right = 1600
+limit_bottom = 1600
+
+[node name="OrbitPivot" type="Node2D" parent="."]

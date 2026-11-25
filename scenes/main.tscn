@@ -1,0 +1,509 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="Script" path="res://scripts/hud.gd" id="3_hud"]
+[ext_resource type="Theme" path="res://scenes/ui_theme.tres" id="4_ui"]
+[ext_resource type="Script" path="res://scripts/min_scroll.gd" id="5_minscroll"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_h"]
+size = Vector2(3232, 24)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_v"]
+size = Vector2(24, 3232)
+
+[node name="Main" type="Node2D" groups=["game"]]
+process_mode = 3
+script = ExtResource("1_main")
+
+[node name="Background" type="Polygon2D" parent="."]
+z_index = -10
+polygon = PackedVector2Array(-1600, -1600, 1600, -1600, 1600, 1600, -1600, 1600)
+color = Color(0.13, 0.18, 0.13, 1)
+
+[node name="Decor1" type="Polygon2D" parent="."]
+z_index = -5
+position = Vector2(400, -300)
+polygon = PackedVector2Array(-40, -25, 40, -25, 40, 25, -40, 25)
+color = Color(0.2, 0.26, 0.2, 1)
+
+[node name="Decor2" type="Polygon2D" parent="."]
+z_index = -5
+position = Vector2(-500, 400)
+polygon = PackedVector2Array(-30, -30, 30, -30, 30, 30, -30, 30)
+color = Color(0.2, 0.26, 0.2, 1)
+
+[node name="Decor3" type="Polygon2D" parent="."]
+z_index = -5
+position = Vector2(800, 600)
+polygon = PackedVector2Array(-50, -20, 50, -20, 50, 20, -50, 20)
+color = Color(0.2, 0.26, 0.2, 1)
+
+[node name="Decor4" type="Polygon2D" parent="."]
+z_index = -5
+position = Vector2(-900, -700)
+polygon = PackedVector2Array(-35, -35, 35, -35, 35, 35, -35, 35)
+color = Color(0.2, 0.26, 0.2, 1)
+
+[node name="Decor5" type="Polygon2D" parent="."]
+z_index = -5
+position = Vector2(200, 900)
+polygon = PackedVector2Array(-45, -25, 45, -25, 45, 25, -45, 25)
+color = Color(0.2, 0.26, 0.2, 1)
+
+[node name="WallTop" type="StaticBody2D" parent="."]
+position = Vector2(0, -1612)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallTop"]
+shape = SubResource("RectangleShape2D_h")
+
+[node name="WallBottom" type="StaticBody2D" parent="."]
+position = Vector2(0, 1612)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallBottom"]
+shape = SubResource("RectangleShape2D_h")
+
+[node name="WallLeft" type="StaticBody2D" parent="."]
+position = Vector2(-1612, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallLeft"]
+shape = SubResource("RectangleShape2D_v")
+
+[node name="WallRight" type="StaticBody2D" parent="."]
+position = Vector2(1612, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallRight"]
+shape = SubResource("RectangleShape2D_v")
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+position = Vector2(0, 0)
+
+[node name="HUD" type="CanvasLayer" parent="."]
+process_mode = 3
+script = ExtResource("3_hud")
+
+[node name="XPBar" type="ProgressBar" parent="HUD"]
+anchor_right = 1.0
+offset_bottom = 20.0
+max_value = 5.0
+show_percentage = false
+
+[node name="TopLeft" type="VBoxContainer" parent="HUD"]
+offset_left = 16.0
+offset_top = 24.0
+offset_right = 236.0
+offset_bottom = 92.0
+theme_override_constants/separation = 2
+
+[node name="LevelLabel" type="Label" parent="HUD/TopLeft"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Уровень 1"
+
+[node name="GoldLabel" type="Label" parent="HUD/TopLeft"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 16
+text = "Золото: 0"
+
+[node name="TopCenter" type="VBoxContainer" parent="HUD"]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -260.0
+offset_top = 24.0
+offset_right = 260.0
+offset_bottom = 112.0
+theme_override_constants/separation = 2
+
+[node name="TimerLabel" type="Label" parent="HUD/TopCenter"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "00:00"
+horizontal_alignment = 1
+
+[node name="BossLabel" type="Label" parent="HUD/TopCenter"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 16
+text = "БОСС"
+horizontal_alignment = 1
+
+[node name="BossBar" type="ProgressBar" parent="HUD/TopCenter"]
+visible = false
+custom_minimum_size = Vector2(500, 20)
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="TopRight" type="VBoxContainer" parent="HUD"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -236.0
+offset_top = 24.0
+offset_right = -16.0
+offset_bottom = 92.0
+theme_override_constants/separation = 2
+
+[node name="KillsLabel" type="Label" parent="HUD/TopRight"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Убийств: 0"
+horizontal_alignment = 2
+
+[node name="FPSLabel" type="Label" parent="HUD/TopRight"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.68, 0.78, 0.72, 1)
+theme_override_font_sizes/font_size = 14
+text = "FPS 0"
+horizontal_alignment = 2
+
+[node name="HPBar" type="ProgressBar" parent="HUD"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -48.0
+offset_right = 316.0
+offset_bottom = -24.0
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="HPLabel" type="Label" parent="HUD"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 330.0
+offset_top = -48.0
+offset_right = 500.0
+offset_bottom = -24.0
+theme_override_font_sizes/font_size = 18
+text = "HP 100 / 100"
+
+[node name="DifficultyLabel" type="Label" parent="HUD"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -452.0
+offset_top = -164.0
+offset_right = -16.0
+offset_bottom = -142.0
+theme_override_font_sizes/font_size = 14
+text = "Сложность: Нормальная"
+horizontal_alignment = 2
+
+[node name="StatsLabel" type="Label" parent="HUD"]
+visible = false
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -532.0
+offset_top = -140.0
+offset_right = -16.0
+offset_bottom = -4.0
+theme_override_font_sizes/font_size = 11
+text = ""
+horizontal_alignment = 2
+
+[node name="WaveLabel" type="Label" parent="HUD"]
+visible = false
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -420.0
+offset_top = 132.0
+offset_right = 420.0
+offset_bottom = 182.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 34
+text = "ВОЛНА"
+horizontal_alignment = 1
+
+[node name="Dimmer" type="ColorRect" parent="HUD"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.65)
+
+[node name="LevelUpPanel" type="PanelContainer" parent="HUD"]
+custom_minimum_size = Vector2(520.0, 380.0)
+theme = ExtResource("4_ui")
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -190.0
+offset_right = 260.0
+offset_bottom = 190.0
+
+[node name="VBox" type="VBoxContainer" parent="HUD/LevelUpPanel"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="HUD/LevelUpPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Уровень повышен! Выбери улучшение:"
+autowrap_mode = 2
+
+[node name="UpgradeButton1" type="Button" parent="HUD/LevelUpPanel/VBox"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+text = "Улучшение 1"
+
+[node name="UpgradeButton2" type="Button" parent="HUD/LevelUpPanel/VBox"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+text = "Улучшение 2"
+
+[node name="UpgradeButton3" type="Button" parent="HUD/LevelUpPanel/VBox"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+text = "Улучшение 3"
+
+[node name="RerollButton" type="Button" parent="HUD/LevelUpPanel/VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Перебросить (10 золота)"
+
+[node name="ResultsPanel" type="PanelContainer" parent="HUD"]
+custom_minimum_size = Vector2(640.0, 560.0)
+theme = ExtResource("4_ui")
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -280.0
+offset_right = 320.0
+offset_bottom = 280.0
+
+[node name="VBox" type="VBoxContainer" parent="HUD/ResultsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="HUD/ResultsPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.45, 0.45, 1)
+theme_override_font_sizes/font_size = 30
+text = "Ты погиб..."
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="HUD/ResultsPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = ""
+horizontal_alignment = 1
+
+[node name="RecordLabel" type="Label" parent="HUD/ResultsPanel/VBox"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Новый рекорд!"
+horizontal_alignment = 1
+
+[node name="StatsRow" type="HBoxContainer" parent="HUD/ResultsPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TimeValue" type="Label" parent="HUD/ResultsPanel/VBox/StatsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "00:00"
+horizontal_alignment = 1
+
+[node name="KillsValue" type="Label" parent="HUD/ResultsPanel/VBox/StatsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "0"
+horizontal_alignment = 1
+
+[node name="LevelValue" type="Label" parent="HUD/ResultsPanel/VBox/StatsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "1"
+horizontal_alignment = 1
+
+[node name="GoldValue" type="Label" parent="HUD/ResultsPanel/VBox/StatsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 24
+text = "+0"
+horizontal_alignment = 1
+
+[node name="StatsCaptions" type="HBoxContainer" parent="HUD/ResultsPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TimeCaption" type="Label" parent="HUD/ResultsPanel/VBox/StatsCaptions"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.65, 0.7, 0.66, 1)
+theme_override_font_sizes/font_size = 12
+text = "время"
+horizontal_alignment = 1
+
+[node name="KillsCaption" type="Label" parent="HUD/ResultsPanel/VBox/StatsCaptions"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.65, 0.7, 0.66, 1)
+theme_override_font_sizes/font_size = 12
+text = "убийств"
+horizontal_alignment = 1
+
+[node name="LevelCaption" type="Label" parent="HUD/ResultsPanel/VBox/StatsCaptions"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.65, 0.7, 0.66, 1)
+theme_override_font_sizes/font_size = 12
+text = "уровень"
+horizontal_alignment = 1
+
+[node name="GoldCaption" type="Label" parent="HUD/ResultsPanel/VBox/StatsCaptions"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.65, 0.7, 0.66, 1)
+theme_override_font_sizes/font_size = 12
+text = "золото за забег"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="HUD/ResultsPanel/VBox"]
+custom_minimum_size = Vector2(0, 220)
+script = ExtResource("5_minscroll")
+layout_mode = 2
+size_flags_vertical = 3
+follow_focus = true
+horizontal_scroll_mode = 0
+clip_contents = true
+
+[node name="Body" type="VBoxContainer" parent="HUD/ResultsPanel/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="DamageTitle" type="Label" parent="HUD/ResultsPanel/VBox/Scroll/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.8, 0.75, 1)
+theme_override_font_sizes/font_size = 14
+text = "ОТКУДА УРОН"
+
+[node name="DamageRows" type="VBoxContainer" parent="HUD/ResultsPanel/VBox/Scroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 3
+
+[node name="BuildTitle" type="Label" parent="HUD/ResultsPanel/VBox/Scroll/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.8, 0.75, 1)
+theme_override_font_sizes/font_size = 14
+text = "БИЛД"
+
+[node name="BuildRows" type="VBoxContainer" parent="HUD/ResultsPanel/VBox/Scroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 3
+
+[node name="BossInfo" type="Label" parent="HUD/ResultsPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.78, 0.74, 1)
+theme_override_font_sizes/font_size = 13
+text = ""
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Buttons" type="HBoxContainer" parent="HUD/ResultsPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="RestartButton" type="Button" parent="HUD/ResultsPanel/VBox/Buttons"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "Ещё раз"
+
+[node name="ContinueButton" type="Button" parent="HUD/ResultsPanel/VBox/Buttons"]
+visible = false
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "Продолжить"
+
+[node name="MenuButton" type="Button" parent="HUD/ResultsPanel/VBox/Buttons"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "В меню"
+
+[node name="PausePanel" type="PanelContainer" parent="HUD"]
+custom_minimum_size = Vector2(600.0, 540.0)
+theme = ExtResource("4_ui")
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -270.0
+offset_right = 300.0
+offset_bottom = 270.0
+
+[node name="VBox" type="VBoxContainer" parent="HUD/PausePanel"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="HUD/PausePanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Пауза"
+horizontal_alignment = 1
+
+[node name="PauseStats" type="Label" parent="HUD/PausePanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Время: 00:00"
+horizontal_alignment = 1
+
+[node name="ControlsLabel" type="Label" parent="HUD/PausePanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.8, 0.88, 1)
+theme_override_font_sizes/font_size = 13
+text = "Управление"
+
+[node name="BuildScroll" type="ScrollContainer" parent="HUD/PausePanel/VBox"]
+clip_contents = true
+custom_minimum_size = Vector2(0, 235)
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="BuildStats" type="Label" parent="HUD/PausePanel/VBox/BuildScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/line_spacing = 3
+theme_override_font_sizes/font_size = 14
+autowrap_mode = 2
+
+[node name="PauseContinueButton" type="Button" parent="HUD/PausePanel/VBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Продолжить"
+
+[node name="PauseRestartButton" type="Button" parent="HUD/PausePanel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Заново"
+
+[node name="PauseMenuButton" type="Button" parent="HUD/PausePanel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Главное меню"
