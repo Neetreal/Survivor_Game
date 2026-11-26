@@ -12,6 +12,7 @@ const LANGUAGES: Array = ["ru", "en"]
 var locale: String = "ru"
 
 ## Русский текст → английский.
+# ── Словарь переводов: ключ — русский текст, значение — английский (нет перевода — остаётся русский).
 const EN: Dictionary = {
 	"%d мин": "%d min",
 	"%d ч %d мин": "%d h %d min",
@@ -423,6 +424,7 @@ const EN: Dictionary = {
 	"▶ Топкие болота": "▶ Mires",
 }
 
+# ── Работа с языком: перевод строки, переключение, обход дерева сцены при старте.
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	locale = Records.settings_language
