@@ -1,12 +1,14 @@
 extends CharacterBody2D
 ## Игрок-выживальщик: движение WASD, авто-оружие, опыт и улучшения.
 
+# ── Сигналы: HUD и Main подписываются на изменения вместо опроса каждый кадр.
 signal hp_changed(current_hp: int, maximum_hp: int)
 signal xp_changed(current_xp: int, xp_next: int, level: int)
 signal leveled_up
 signal died
 signal stats_changed
 
+# ── Сцены снарядов: preload один раз на старте, чтобы не грузить ресурс на каждый выстрел.
 const OrbitBladeScene: PackedScene = preload("res://scenes/orbit_blade.tscn")
 const ProjectileScene: PackedScene = preload("res://scenes/projectile.tscn")
 const NovaRingScene: PackedScene = preload("res://scenes/nova_ring.tscn")
@@ -19,6 +21,7 @@ const PoisonCloudScene: PackedScene = preload("res://scenes/poison_cloud.tscn")
 const SawScene: PackedScene = preload("res://scenes/saw.tscn")
 const ORBIT_RADIUS: float = 72.0
 
+# ── Статы героя: база из Records, дальше их меняют улучшения и магазин.
 # Характеристики (меняются улучшениями)
 var max_hp: int = 100
 var hp: int = 100
@@ -27,6 +30,7 @@ var armor: int = 0
 var magnet_radius: float = 95.0
 var xp_multiplier: float = 1.0
 
+# ── Статы заклинаний: своя группа переменных у каждого, имена собраны в WEAPON_DAMAGE_VARS.
 var bolt_damage: int = 12
 var bolt_cooldown: float = 0.9
 var bolt_count: int = 1
@@ -92,6 +96,7 @@ var boom_damage: int = 14
 const ARROW_SPRITE: String = "fx_arrow"
 const ARROW_COLOR := Color(1.0, 0.84, 0.42)
 
+# ── Таблица «id заклинания → переменная урона»: нужна карточкам «+50% урону».
 const WEAPON_DAMAGE_VARS := {
 	"bolt": "bolt_damage",
 	"orbit": "orbit_damage",
@@ -111,6 +116,7 @@ var boom_cooldown: float = 1.6
 var boom_count: int = 1
 var boom_range: float = 210.0 # Дальность вылета бумеранга
 
+# ── Прогресс забега: опыт, уровень, отложенные выборы улучшений, флаги смерти.
 var xp: int = 0
 var level: int = 1
 var xp_next: int = 5
@@ -122,6 +128,7 @@ var dead: bool = false
 var damage_taken: int = 0 # Сколько всего урона получено за забег (для достижений)
 var zone_slow: float = 1.0 # Множитель скорости от зон трясины (1.0 = без замедления)
 
+# ── Пассивные предметы: уровни 0..5, бонусы применяются через _apply_stat_upgrade.
 # ---------------- Пассивные предметы ----------------
 # Уровни пассивок: 0..5. Каждый уровень даёт небольшой постоянный бонус.
 var passive_levels: Dictionary = {"book": 0, "candle": 0, "glove": 0, "boots": 0, "heart": 0, "magnet": 0}
@@ -130,10 +137,12 @@ var passive_definitions: Array = PassiveData.LIST
 var damage_mult: float = 1.0 # Множитель урона (перчатка)
 var area_mult: float = 1.0 # Множитель площади/дальности (свеча)
 
+# ── Эволюции оружия: id разблокированных и их имена для отчёта.
 # ---------------- Эволюции оружия ----------------
 var evolutions: Array = []
 var evolution_names: Dictionary = WeaponData.evolution_names()
 
+# ── Таймеры перезарядки: тикают в _physics_process, на нуле — каст заклинания.
 var bolt_timer: float = 0.0
 var nova_timer: float = 1.2
 var chain_timer: float = 0.6
@@ -146,11 +155,13 @@ var poison_timer: float = 1.0
 var saw_timer: float = 1.4
 var flash_timer: float = 0.0
 
+# ── Узлы сцены: спрайт (или фолбэк-кружок), орбита клинков, аура льда.
 @onready var visual: Polygon2D = $Visual
 @onready var body: Sprite2D = $Body
 @onready var orbit_pivot: Node2D = $OrbitPivot
 @onready var frost_visual: Polygon2D = $FrostVisual
 
+# ── Старт забега: применить героя и магазин, посчитать опыт, собрать клинки.
 func _ready() -> void:
 	# ВАЖНО: Main стоит в режиме ALWAYS, а дети наследуют режим родителя.
 	# Поэтому явно ставим PAUSABLE, иначе игрок не остановится на паузе прокачки.
@@ -187,6 +198,7 @@ func apply_body_sprite(fallback_color: Color) -> void:
 		visual.visible = true
 		visual.color = fallback_color
 
+# ── Походка: покадровые спрайты, если они есть; иначе процедурная анимация.
 ## Покадровая походка: если рядом с базовым спрайтом лежат <id>_walk1 и <id>_walk2,
 ## собираем цикл «стойка → шаг → стойка → шаг другой ногой». Нет кадров —
 ## остаётся процедурная анимация ниже.
@@ -236,6 +248,7 @@ func apply_meta_upgrades() -> void:
 	poison_damage = int(float(poison_damage) * power_mult)
 	saw_damage = int(float(saw_damage) * power_mult)
 
+# ── Главный цикл: движение, походка, таймеры всех заклинаний, затухание вспышки.
 func _physics_process(delta: float) -> void:
 	if dead:
 		return
@@ -250,6 +263,7 @@ func _physics_process(delta: float) -> void:
 	if velocity.length() > 10.0 and visual.visible:
 		visual.rotation = velocity.angle() + PI / 2.0
 	_animate_body(delta, input_dir)
+	# ── Оружие: перезарядка по каждому открытому заклинанию — свой таймер и каст.
 	# Оружие: магические снаряды (если открыто)
 	if unlocked_weapons.has("bolt"):
 		bolt_timer -= delta
@@ -375,6 +389,7 @@ func _animate_body(delta: float, input_dir: Vector2) -> void:
 		body.rotation = 0.0
 		body.scale = Vector2(1.0 + breath2 * 0.015, 1.0 + breath2 * 0.015)
 
+# ── Ввод: WASD, стрелки, стик и крестовина геймпада (стик даёт аналоговый ход).
 func get_input_vector() -> Vector2:
 	# Движение через действия ввода: WASD, стрелки, левый стик и крестовина геймпада.
 	# Стик даёт аналоговый ввод — можно идти вполсилы.
@@ -383,6 +398,7 @@ func get_input_vector() -> Vector2:
 		return Vector2.ZERO
 	return v.limit_length(1.0)
 
+# ── Авто-наведение: ближайший враг в радиусе, не занятый другими снарядами.
 func find_nearest_enemy(exclude: Array = [], max_distance: float = 0.0):
 	# Ближайший враг, которого нет в exclude, в пределах max_distance (0 = без лимита).
 	var best = null
@@ -399,6 +415,7 @@ func find_nearest_enemy(exclude: Array = [], max_distance: float = 0.0):
 			best = enemy
 	return best
 
+# ── Множители: замедление трясиной, уровни пассивок, масштаб урона и площади.
 func apply_zone_slow(factor: float) -> void:
 	# Вызывается зоной трясины каждый кадр, пока игрок внутри.
 	zone_slow = minf(zone_slow, factor)
@@ -421,6 +438,7 @@ func scaled_area(radius: float) -> float:
 func get_available_evolutions() -> Array:
 	return UpgradePool.available_evolutions(self)
 
+# ── Пассивки и эволюции: выдача уровня пассивки и разблокировка эволюции оружия.
 func apply_passive(passive_id: String) -> void:
 	var def: Dictionary = PassiveData.by_id(passive_id)
 	if def.is_empty():
@@ -450,6 +468,7 @@ func refresh_orbit_damage() -> void:
 	for blade in orbit_pivot.get_children():
 		blade.damage = scaled_damage(orbit_damage)
 
+# ── Стрельба: по функции на заклинание, каждая сама ищет цель и спавнит снаряд.
 func try_fire_bolt() -> void:
 	# Каждый снаряд выбирает СВОЮ ближайшую цель (как в Vampire Survivors),
 	# чтобы несколько снарядов не летели в одну точку и не теряли урон.
@@ -622,6 +641,7 @@ func throw_saw() -> void:
 		get_tree().current_scene.call_deferred("add_child", saw)
 	AudioManager.play("boomerang", -14.0, 0.75)
 
+# ── Клинки на орбите: пересборка узлов после смены количества, размера или урона.
 func rebuild_orbit_blades() -> void:
 	for child in orbit_pivot.get_children():
 		orbit_pivot.remove_child(child)
@@ -637,6 +657,7 @@ func rebuild_orbit_blades() -> void:
 		blade.position = Vector2(cos(angle), sin(angle)) * ORBIT_RADIUS
 		blade.rotation = angle + PI / 2.0
 
+# ── Урон игроку и лечение: броня, вспышка, тряска, сигнал HP, смерть.
 func take_damage(amount: int) -> void:
 	if dead:
 		return
@@ -661,6 +682,7 @@ func heal(amount: int) -> void:
 	hp = mini(max_hp, hp + amount)
 	hp_changed.emit(hp, max_hp)
 
+# ── Опыт и уровни: каждый 5-й уровень — выбор заклинания, остальные — улучшение.
 func add_xp(amount: int) -> void:
 	if dead:
 		return
@@ -682,6 +704,7 @@ func add_xp(amount: int) -> void:
 func xp_needed_for_level(lvl: int) -> int:
 	return int(5.0 + float(lvl - 1) * 4.0 + pow(float(lvl - 1), 1.6))
 
+# ── Выбор улучшений: карточки уровня и эволюции за ядро мини-босса.
 ## Карточки на экране прокачки: пул собирается из данных (см. UpgradePool).
 ## Эволюций здесь больше нет — их выдаёт мини-босс, см. get_evolution_choices().
 func get_upgrade_choices(count: int) -> Array:
@@ -695,6 +718,7 @@ func get_evolution_choices(count: int = 3) -> Array:
 	available.shuffle()
 	return available.slice(0, mini(count, available.size()))
 
+# ── Отчёт для паузы: герой, оружие, пассивки, эволюции одним текстом.
 func build_report() -> String:
 	var lines: Array = []
 	var char_data: Dictionary = Records.get_character(Records.selected_character)
@@ -728,7 +752,7 @@ func build_report() -> String:
 	return "\n".join(PackedStringArray(lines))
 
 ## Все заклинания без фильтра «чего ещё нет» — нужно для названий в отчёте.
-## Все заклинания без фильтра «чего ещё нет» — нужно для названий в отчёте.
+# ── Заклинания: открытие новых и карточки выбора (в отчёте нужны все названия).
 func get_spell_choices_all() -> Array:
 	return WeaponData.all_titles()
 
@@ -752,6 +776,7 @@ func unlock_spell(spell_id: String) -> void:
 		rebuild_orbit_blades()
 	stats_changed.emit()
 
+# ── Урон заклинаний: чтение, подъём на 50% и готовая карточка «+50% урону».
 ## Урон конкретного заклинания «как есть» (без общего множителя damage_mult).
 func weapon_damage(weapon_id: String) -> int:
 	var stat: String = str(WEAPON_DAMAGE_VARS.get(weapon_id, ""))
@@ -831,6 +856,7 @@ func get_level5_choices() -> Array:
 			result.insert(1, middle)
 	return result.slice(0, 3)
 
+# ── Применение улучшений: карточка → стата через _apply_stat_upgrade (op/value из данных).
 func apply_upgrade(upgrade_id: String) -> void:
 	# Карточка 5-го уровня: урон одному заклинанию.
 	if upgrade_id.begins_with("boost:"):
