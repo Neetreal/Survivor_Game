@@ -1,6 +1,7 @@
 extends Control
 ## Главное меню: Играть, Рекорды, Выход.
 
+# ── Узлы меню: кнопки и семь окон — игра, магазин, профиль, достижения, настройки, рекорды, подтверждение.
 @onready var play_button: Button = $Center/VBox/PlayButton
 @onready var records_button: Button = $Center/VBox/RecordsButton
 @onready var quit_button: Button = $Center/VBox/QuitButton
@@ -66,6 +67,7 @@ extends Control
 
 ## Все всплывающие окна меню. Видимым может быть только одно,
 ## иначе нижнее окно просвечивало сквозь верхнее.
+# ── Состояние меню: список окон и параметры окна подтверждения (что сбрасываем и показан ли итог).
 var all_panels: Array[PanelContainer] = []
 ## Ширина текста в окне подтверждения при обычном масштабе. Нужна явно:
 ## у Label с переносом слов минимальная высота считается по текущей ширине,
@@ -79,6 +81,7 @@ var _confirm_kind: String = ""
 ## Окно уже показывает результат сброса — тогда кнопка называется «Ок».
 var _confirm_done: bool = false
 
+# ── Старт меню: подписка на все кнопки, перевод, настройки, музыка, фокус для геймпада.
 func _ready() -> void:
 	play_button.pressed.connect(_on_play_pressed)
 	start_button.pressed.connect(_on_start_pressed)
@@ -136,6 +139,7 @@ func _ready() -> void:
 		panel.visible = false
 	dimmer.visible = false
 
+# ── Показ окон: открыто ровно одно, меню под ним скрыто, панель подгоняется под экран.
 ## Показать ровно одно окно: остальные гасим, меню под ними убираем.
 func show_panel(target: PanelContainer) -> void:
 	for panel in all_panels:
@@ -147,6 +151,7 @@ func show_panel(target: PanelContainer) -> void:
 		UIScale.fit_panel(target, get_viewport().get_visible_rect().size)
 
 ## Закрыть все окна и вернуться к списку кнопок.
+# ── Закрыть все окна и вернуться к списку кнопок главного меню.
 func close_panels() -> void:
 	for panel in all_panels:
 		panel.visible = false
@@ -155,6 +160,7 @@ func close_panels() -> void:
 	play_button.grab_focus()
 
 ## Esc закрывает текущее окно меню.
+# ── Esc и B: сначала закрывают окно подтверждения, потом текущее окно меню.
 func _input(event: InputEvent) -> void:
 	# Esc/B поверх окна подтверждения закрывает только его — настройки остаются.
 	if event.is_action_pressed("ui_cancel") and confirm_panel.visible:
@@ -168,12 +174,14 @@ func _input(event: InputEvent) -> void:
 		close_panels()
 		get_viewport().set_input_as_handled()
 
+# ── Строка рекорда внизу главного меню.
 func refresh_best_label() -> void:
 	if Records.best_time > 0.0:
 		best_label.text = Loc.t("Рекорд: %s • Убийств: %d • Уровень: %d") % [Records.format_time(Records.best_time), Records.best_kills, Records.best_level]
 	else:
 		best_label.text = Loc.t("Рекордов пока нет — сыграй первый забег!")
 
+# ── Экран «Играть»: список героев, сложность, карты и кнопка «В бой».
 func _on_play_pressed() -> void:
 	AudioManager.play("click", -8.0)
 	build_character_list()
@@ -181,6 +189,7 @@ func _on_play_pressed() -> void:
 	show_panel(play_panel)
 	start_button.grab_focus()
 
+# ── Выход из игры; следом — окно рекордов и история последних забегов.
 func _on_quit_pressed() -> void:
 	AudioManager.play("click", -8.0)
 	get_tree().quit()
@@ -208,6 +217,7 @@ func _on_back_pressed() -> void:
 	AudioManager.play("click", -8.0)
 	close_panels()
 
+# ── Выбор сложности и карты: маркер ▶ у текущего варианта и подпись под ними.
 func refresh_difficulty_buttons() -> void:
 	var easy_name: String = Loc.t(str(Records.difficulty_definitions["easy"]["name"]))
 	var normal_name: String = Loc.t(str(Records.difficulty_definitions["normal"]["name"]))
@@ -233,6 +243,7 @@ func _on_map_selected(map_id: String) -> void:
 	refresh_map_buttons()
 	refresh_choice_info()
 
+# ── Старт забега: переход в главную сцену.
 func _on_start_pressed() -> void:
 	AudioManager.play("click", -8.0)
 	get_tree().change_scene_to_file("res://scenes/main.tscn")
@@ -246,6 +257,7 @@ func _on_difficulty_selected(difficulty_id: String) -> void:
 	Records.set_difficulty(difficulty_id)
 	refresh_difficulty_buttons()
 
+# ── Профиль: статистика за всё время и переход к списку достижений.
 func _on_profile_pressed() -> void:
 	AudioManager.play("click", -8.0)
 	build_profile()
@@ -289,6 +301,7 @@ func build_profile() -> void:
 	]
 	profile_achievements_button.text = Loc.t("Достижения (%d / %d)") % [Records.achievement_count(), Records.achievement_definitions.size()]
 
+# ── Список достижений: отметка [+], описание, награда и общий прогресс.
 func build_achievements_list() -> void:
 	for child in achievements_list.get_children():
 		achievements_list.remove_child(child)
@@ -311,6 +324,7 @@ func build_achievements_list() -> void:
 	achievements_progress.text = Loc.t("Открыто %d из %d · за достижения получено %d золота") % [unlocked, total, Records.achievement_reward_total()]
 
 ## Кнопка «Сбросить рекорды»: спрашиваем подтверждение, ничего не стирая сразу.
+# ── Сброс данных: сначала окно подтверждения — ничего не стирается сразу.
 func _on_reset_records_pressed() -> void:
 	AudioManager.play("click", -8.0)
 	open_confirm("records")
@@ -387,6 +401,7 @@ func _show_confirm_done(title: String, text: String) -> void:
 	UIScale.fit_panel(confirm_panel, get_viewport().get_visible_rect().size)
 	confirm_accept_button.grab_focus()
 
+# ── Настройки: звук, режим экрана, качество, FPS, тряска, масштаб интерфейса, язык.
 func _on_settings_pressed() -> void:
 	AudioManager.play("click", -8.0)
 	refresh_settings_ui()
@@ -397,6 +412,7 @@ func _on_settings_back_pressed() -> void:
 	AudioManager.play("click", -8.0)
 	close_panels()
 
+# ── Отрисовка настроек: выделение текущих значений маркером ▶ без вызова сигналов.
 func refresh_settings_ui() -> void:
 	volume_slider.set_value_no_signal(Records.settings_volume * 100.0)
 	quality_low_button.text = ("▶ " + Loc.t("Низкое")) if Records.settings_quality == 0 else Loc.t("Низкое")
@@ -415,6 +431,7 @@ func refresh_settings_ui() -> void:
 	lang_ru_button.text = ("▶ Русский") if Loc.locale == "ru" else "Русский"
 	lang_en_button.text = ("▶ English") if Loc.locale == "en" else "English"
 
+# ── Обработчики настроек: громкость, экран, язык, качество, FPS, тряска, масштаб.
 func _on_volume_changed(value: float) -> void:
 	Records.set_volume(value / 100.0)
 
@@ -447,6 +464,7 @@ func _on_shake_selected(mode_index: int) -> void:
 
 ## Масштаб интерфейса: мелкий / обычный / крупный. Применяется сразу —
 ## шрифты и отступы пересчитываются, панель подгоняется под новый размер.
+# ── Изменение размера окна: подогнать видимую панель заново.
 func _on_viewport_resized() -> void:
 	for panel in all_panels:
 		if panel.visible:
@@ -460,6 +478,7 @@ func _on_ui_scale_selected(mode_index: int) -> void:
 	UIScale.fit_panel(settings_panel, get_viewport().get_visible_rect().size)
 	settings_back_button.grab_focus()
 
+# ── Список героев: кнопка на героя с его заклинанием и описанием.
 func build_character_list() -> void:
 	for child in character_list.get_children():
 		character_list.remove_child(child)
@@ -480,6 +499,7 @@ func _on_character_selected(char_id: String) -> void:
 	Records.set_selected_character(char_id)
 	build_character_list()
 
+# ── Магазин постоянных улучшений за золото.
 func _on_shop_pressed() -> void:
 	AudioManager.play("click", -8.0)
 	build_shop_list()
@@ -490,6 +510,7 @@ func _on_shop_back_pressed() -> void:
 	AudioManager.play("click", -8.0)
 	close_panels()
 
+# ── Список магазина: уровень, цена, «MAX» и недоступность без золота.
 func build_shop_list() -> void:
 	shop_gold_label.text = Loc.t("Золото: %d") % Records.gold
 	for child in shop_list.get_children():

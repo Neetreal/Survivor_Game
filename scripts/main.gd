@@ -3,11 +3,13 @@ extends Node2D
 ## Main работает в режиме ALWAYS, чтобы принимать сигналы меню во время паузы,
 ## а внутри _process сам проверяет get_tree().paused.
 
+# ── Сцены: враг, зона трясины, ловушка, ядро эволюции — preload один раз на старте.
 const EnemyScene: PackedScene = preload("res://scenes/enemy.tscn")
 const SlowZoneScene: PackedScene = preload("res://scenes/slow_zone.tscn")
 const HazardScene: PackedScene = preload("res://scenes/hazard.tscn")
 const EvoCoreScene: PackedScene = preload("res://scenes/evo_core.tscn")
 
+# ── Состояние забега: таймеры спавна, лимит врагов, флаги наград и победы.
 var elapsed_time: float = 0.0
 var kills: int = 0
 var spawn_timer: float = 2.0
@@ -26,23 +28,25 @@ var boss_spawned: bool = false
 var miniboss_timer: float = 120.0
 var stream_timer: float = 45.0
 var wave_number: int = 0
-# Реролл улучшений за золото
+# ── Переброс улучшений за золото: счётчик, цена и защита от двойного срабатывания.
 var reroll_count: int = 0
 var shatter_active: bool = false
-# Достижения и профиль
+# ── Достижения и профиль: счётчики забега и отметка «забег закрыт».
 var miniboss_kills: int = 0
 var achievement_timer: float = 2.0
 var run_finished: bool = false
 var slow_zones: Array = [] # Зоны трясины на текущей карте
-# Ловушки арены
+# ── Карта: зоны трясины, ловушки арены, бонус золота.
 var map_traps: bool = false
 var trap_timer: float = 6.5
 var shower_timer: float = 40.0
 var map_gold_bonus: float = 1.0
 
+# ── Узлы сцены: игрок и интерфейс.
 @onready var player = $Player
 @onready var hud = $HUD
 
+# ── Старт забега: сложность, музыка, профиль, подписка на сигналы игрока и HUD.
 func _ready() -> void:
 	# Лимит врагов и таймеры — под выбранную сложность.
 	max_enemies = int(Records.difficulty_value("enemy_cap"))
@@ -65,6 +69,7 @@ func _ready() -> void:
 	hud.update_kills(0)
 	hud.update_timer(0.0)
 
+# ── Кадр забега: таймер, появление босса, полоса HP, вспышка урона.
 func _process(delta: float) -> void:
 	if game_over or get_tree().paused:
 		return
@@ -85,6 +90,7 @@ func _process(delta: float) -> void:
 		update_boss_bar()
 	elif not victory_shown:
 		update_miniboss_bar()
+	# ── Расписание спавна: у каждого события свой таймер (волна, элита, мини-босс, стая, ловушки, окружение).
 	# Обычный спавн
 	spawn_timer -= delta
 	if spawn_timer <= 0.0:
@@ -131,6 +137,7 @@ func _process(delta: float) -> void:
 
 ## Старт спокойный: первая волна через 2 с, потом интервал сокращается.
 ## Раньше было 1.2 с и разгон быстрее — первая минута превращалась в мясорубку.
+# ── Темп забега: интервал и размер волны, потолок врагов, рост HP со временем.
 func current_spawn_interval() -> float:
 	var base: float = clampf(2.0 - elapsed_time * 0.011, 0.35, 2.0)
 	return base * Records.difficulty_value("spawn_interval")
@@ -160,6 +167,7 @@ func current_hp_multiplier() -> float:
 		growth = HP_GROWTH_SLOWDOWN_AFTER * HP_GROWTH_PER_MINUTE + (minutes - HP_GROWTH_SLOWDOWN_AFTER) * HP_GROWTH_LATE
 	return (1.0 + growth) * Records.difficulty_value("enemy_hp")
 
+# ── Обычная волна и лимиты: сколько врагов пускает потолок и сколько пожирателей допустимо.
 func spawn_wave() -> void:
 	var batch: int = current_batch_size()
 	# Лимит врагов: если на экране уже много, новую волну не спавним.
@@ -251,6 +259,7 @@ func pick_enemy_type() -> String:
 		else:
 			return "slime"
 
+# ── Создание врага: настройка под сложность и отложенное добавление в сцену.
 func spawn_enemy(type: String) -> void:
 	spawn_enemy_at(type, random_spawn_position())
 
@@ -271,6 +280,7 @@ func spawn_enemy_at(type: String, pos: Vector2) -> void:
 		enemy.ready.connect(func() -> void: scheduled_eaters = maxi(0, scheduled_eaters - 1), CONNECT_ONE_SHOT)
 	call_deferred("add_child", enemy)
 
+# ── Боссы: финальный на 10-й минуте, мини-боссы каждые 2 минуты и их полоса HP.
 func spawn_boss() -> void:
 	var angle: float = randf() * TAU
 	var pos: Vector2 = player.global_position + Vector2(cos(angle), sin(angle)) * 600.0
@@ -309,8 +319,10 @@ func update_miniboss_bar() -> void:
 ## Отталкивание врагов считается ОДИН раз за кадр по сетке ячеек.
 ## Раньше каждый враг перебирал всех остальных (60x60), а при 120 врагах
 ## это 14 400 пар на кадр — игра проседала бы именно там, где врагов больше всего.
+# ── Расталкивание врагов: один расчёт на кадр по сетке ячеек вместо перебора всех пар.
 const SEPARATION_CELL: float = 48.0
 
+# ── Физика: только расталкивание врагов, раз в кадр.
 func _physics_process(_delta: float) -> void:
 	if get_tree().paused:
 		return
@@ -356,6 +368,7 @@ func update_separation() -> void:
 						push += Vector2(cos(angle), sin(angle))
 		enemy.set("separation_push", push)
 
+# ── Формации: стая строем с края карты и кольцо врагов вокруг игрока.
 func spawn_stream_wave() -> void:
 	# Стая идёт строем с одного края — заставляет двигаться, а не стоять в центре.
 	var alive: int = Enemies.count()
@@ -393,6 +406,7 @@ func spawn_ring_event() -> void:
 		pos.y = clampf(pos.y, -1550.0, 1550.0)
 		spawn_enemy_at("slime", pos)
 
+# ── Точка появления: за пределами экрана, но внутри границ арены.
 func random_spawn_position() -> Vector2:
 	var angle: float = randf() * TAU
 	var distance: float = randf_range(720.0, 860.0)
@@ -401,6 +415,7 @@ func random_spawn_position() -> Vector2:
 	pos.y = clampf(pos.y, -1550.0, 1550.0)
 	return pos
 
+# ── Смерть врага: золото, распад сплиттера, «Заморозка», награда за мини-босса и победа за босса.
 func on_enemy_killed(enemy) -> void:
 	kills += 1
 	hud.update_kills(kills)
@@ -458,6 +473,7 @@ func on_enemy_killed(enemy) -> void:
 		RunStats.boss_killed_at = elapsed_time
 		trigger_victory()
 
+# ── Ядро эволюции: падает с мини-босса, при подборе — пауза и выбор награды.
 func spawn_evo_core(at_position: Vector2) -> void:
 	var core = EvoCoreScene.instantiate()
 	core.configure(at_position)
@@ -479,6 +495,7 @@ func on_evo_core_collected() -> void:
 		hud.show_level_up(player.call("get_upgrade_choices", 3), "Ядро мини-босса: выбери награду:")
 	hud.update_reroll_cost(reroll_cost(), Records.gold)
 
+# ── Ловушки арены: метеорит или шипы рядом с игроком плюс метеоритный дождь.
 func spawn_hazard() -> void:
 	# Ловушка появляется рядом с игроком: от неё нужно уходить, но и толпу она бьёт.
 	var angle: float = randf() * TAU
@@ -507,6 +524,7 @@ func spawn_meteor_shower() -> void:
 		hazard.position = pos
 		add_child(hazard)
 
+# ── Карта: цвет фона и декора, ловушки, бонус золота, зоны трясины.
 func apply_map() -> void:
 	# Оформление арены под выбранную карту + её особые объекты.
 	var map_data: Dictionary = Records.get_map()
@@ -527,6 +545,7 @@ func apply_map() -> void:
 	elif map_traps:
 		hud.announce(Loc.t(str(map_data["name"])).to_upper() + "!", Color(1.0, 0.6, 0.4), 30)
 
+# ── Зоны трясины: раскладка фиксированным сидом, чтобы карта была одинаковой в каждом забеге.
 func spawn_slow_zones(count: int) -> void:
 	# Раскладываем зоны фиксированным сидом: карта одинаковая в каждом забеге.
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -552,6 +571,7 @@ func spawn_slow_zones(count: int) -> void:
 		add_child(zone)
 		slow_zones.append(zone)
 
+# ── Итоги и достижения: сводка забега и проверка достижений с наградой.
 func build_run_data(victory: bool) -> Dictionary:
 	return {
 		"kills": kills,
@@ -575,6 +595,7 @@ func check_achievements(victory: bool) -> void:
 		hud.announce(Loc.t("ДОСТИЖЕНИЕ: %s  +%d золота") % [Loc.t(str(entry["name"])), int(entry["gold"])], Color(1.0, 0.9, 0.35), 22)
 	hud.update_gold(Records.gold)
 
+# ── Переброс: цена растёт с каждым использованием, новый набор того же типа выбора.
 func reroll_cost() -> int:
 	# Первый реролл дешёвый, дальше дорожает — чтобы не спамили.
 	return 10 + reroll_count * 5
@@ -607,6 +628,7 @@ func _on_reroll_requested() -> void:
 		hud.show_level_up(player.call("get_upgrade_choices", 3))
 	hud.update_reroll_cost(reroll_cost(), Records.gold)
 
+# ── Прокачка: пауза и очередь выборов — заклинание, улучшение, сундук, ядро.
 func _on_player_leveled_up() -> void:
 	AudioManager.play("levelup", -4.0)
 	FX.burst(player.global_position, Color(1.0, 0.85, 0.2), 24, 160.0)
@@ -676,6 +698,7 @@ func _on_upgrade_chosen(upgrade_id: String) -> void:
 	player.set("pending_level_ups", int(player.get("pending_level_ups")) - 1)
 	show_next_choice()
 
+# ── Финал забега: победа, выход в бесконечный режим, поражение, рестарт и выход в меню.
 func trigger_victory() -> void:
 	victory_shown = true
 	AudioManager.play("victory", -2.0)

@@ -1,6 +1,7 @@
 extends CanvasLayer
 ## Интерфейс: HP, опыт, таймер, меню улучшений, экран поражения.
 
+# ── Сигналы в Main: выбранная карточка, рестарт, выход в меню, реролл.
 signal upgrade_chosen(upgrade_id: String)
 signal restart_requested
 signal menu_requested
@@ -10,6 +11,7 @@ signal continue_endless_requested
 signal victory_menu_requested
 signal reroll_requested
 
+# ── Состояние окон: какие карточки показаны и какой выбор сейчас открыт.
 var current_choices: Array = []
 var current_spells: Array = []
 var choosing_spell: bool = false
@@ -22,6 +24,7 @@ var announce_tween: Tween = null
 var fps_timer: float = 0.0
 var fps_frames: int = 0
 
+# ── Узлы HUD: верхняя панель, HP, окна прокачки, результатов и паузы.
 @onready var xp_bar: ProgressBar = $XPBar
 @onready var level_label: Label = $TopLeft/LevelLabel
 @onready var timer_label: Label = $TopCenter/TimerLabel
@@ -64,6 +67,7 @@ var fps_frames: int = 0
 @onready var controls_label: Label = $PausePanel/VBox/ControlsLabel
 @onready var fps_label: Label = $TopRight/FPSLabel
 
+# ── Старт: перевод, масштаб интерфейса, подписка на кнопки и на игрока, строка сложности.
 func _ready() -> void:
 	Loc.translate_tree(self)
 	UIScale.apply(self)
@@ -95,9 +99,11 @@ func _ready() -> void:
 ## Затемнение нужно всегда, когда открыто хоть одно окно поверх игры.
 ## Панель по размеру содержимого, по центру. Масштаб интерфейса может её увеличить,
 ## поэтому подгоняем каждый раз перед показом.
+# ── Раскладка окон: подгонка панели под содержимое и текущий масштаб интерфейса.
 func _fit(panel: Control) -> void:
 	UIScale.fit_panel(panel, get_viewport().get_visible_rect().size)
 
+# ── Кадр интерфейса: затемнение под окнами и счётчик FPS.
 func _process(delta: float) -> void:
 	dimmer.visible = level_up_panel.visible or results_panel.visible or pause_panel.visible
 	_update_fps_counter(delta)
@@ -105,6 +111,7 @@ func _process(delta: float) -> void:
 ## Счётчик кадров: считаем сами за окно 0.25 с — так цифра честная и не дёргается
 ## (Engine.get_frames_per_second() усредняет за секунду и запаздывает).
 ## Цвет показывает состояние: зелёный — плавно, жёлтый — заметно, красный — тяжело.
+# ── Счётчик FPS: своё окно 0.25 с, цвет — по нагрузке (зелёный / жёлтый / красный).
 func _update_fps_counter(delta: float) -> void:
 	if not Records.settings_fps:
 		fps_label.visible = false
@@ -127,6 +134,7 @@ func _update_fps_counter(delta: float) -> void:
 	else:
 		fps_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.45))
 
+# ── Сигналы игрока: HP, опыт и характеристики (в бою скрыты, живут в паузе).
 func _on_hp_changed(current_hp: int, maximum_hp: int) -> void:
 	hp_bar.max_value = maximum_hp
 	hp_bar.value = current_hp
@@ -142,6 +150,7 @@ func _on_stats_changed() -> void:
 	stats_label.visible = false
 	stats_label.text = ""
 
+# ── Верхняя панель: таймер, золото, счётчик убийств.
 func update_timer(elapsed: float) -> void:
 	cached_time = elapsed
 	var total_seconds: int = int(elapsed)
@@ -156,6 +165,7 @@ func update_kills(kills: int) -> void:
 	cached_kills = kills
 	kills_label.text = Loc.t("Убийств: %d") % kills
 
+# ── Окно прокачки: три кнопки-карточки и три вида выбора (улучшение, 5-й уровень, заклинание).
 func show_level_up(choices: Array, title: String = "Уровень повышен! Выбери улучшение:") -> void:
 	choosing_spell = false
 	choosing_level5 = false
@@ -239,7 +249,7 @@ func _on_upgrade_button_pressed(index: int) -> void:
 		level_up_panel.visible = false
 		upgrade_chosen.emit(upgrade_id)
 
-# Источники: [id, цвет] — те же цвета, что у снарядов в бою.
+# ── Цвета источников урона: те же, что у снарядов в бою.
 const SOURCE_COLORS := {
 	"bolt": Color(0.62, 0.78, 1.0),
 	"orbit": Color(0.88, 0.92, 0.98),
@@ -258,6 +268,7 @@ const SOURCE_COLORS := {
 
 var _results_victory: bool = false
 
+# ── Экран результатов: победа или смерть, разбор урона и сборка забега.
 func show_game_over(elapsed: float, kills: int, level: int, is_new_record: bool = false) -> void:
 	show_results(false, elapsed, kills, level, is_new_record)
 
@@ -290,11 +301,13 @@ func show_results(is_victory: bool, elapsed: float, kills: int, level: int, is_n
 	else:
 		restart_button.grab_focus()
 
+# ── Второй проход раскладки: контейнеры пересчитывают размеры только к концу кадра.
 func _fit_next_frame() -> void:
 	await get_tree().process_frame
 	if results_panel.visible:
 		_fit(results_panel)
 
+# ── Строка про босса: когда пришёл, убит ли и сколько прожил.
 func _boss_context(elapsed: float) -> String:
 	var spawn: float = RunStats.boss_spawn_time
 	if RunStats.boss_killed_at >= 0.0:
@@ -303,6 +316,7 @@ func _boss_context(elapsed: float) -> String:
 		return Loc.t("Босс появляется на %s — ты не дожил %s") % [Records.format_time(spawn), Records.format_time(spawn - elapsed)]
 	return Loc.t("Босс пришёл на %s и остался жив") % Records.format_time(spawn)
 
+# ── Помощники строк результатов: очистка списка, маркер цвета, подпись, полоска доли.
 func _clear_rows(box: VBoxContainer) -> void:
 	for child in box.get_children():
 		box.remove_child(child)
@@ -327,6 +341,7 @@ func _row_label(text: String, size: int, expand: bool) -> Label:
 		label.clip_text = true
 	return label
 
+# ── Разбор урона: топ-3 источника и «остальное» с долями.
 func _build_damage_rows() -> void:
 	_clear_rows(damage_rows)
 	var entries: Array = RunStats.top_sources(3)
@@ -368,6 +383,7 @@ func _damage_row(id: String, title: String, damage: int, share: float) -> HBoxCo
 	row.add_child(pct)
 	return row
 
+# ── Сборка забега: оружие с эволюциями и уровни пассивок.
 func _build_build_rows() -> void:
 	_clear_rows(build_rows)
 	var p: Node = get_tree().get_first_node_in_group("player")
@@ -399,6 +415,7 @@ func _build_build_rows() -> void:
 	if not parts.is_empty():
 		build_rows.add_child(_row_label(Loc.t("Пассивки: %s") % ", ".join(parts), 13, true))
 
+# ── Поиск эволюции для конкретного оружия.
 func _evolution_of(weapon_id: String, evolutions: Array) -> String:
 	for evo_id in evolutions:
 		var def: Dictionary = WeaponData.weapon_of_evolution(str(evo_id))
@@ -406,6 +423,7 @@ func _evolution_of(weapon_id: String, evolutions: Array) -> String:
 			return Loc.t(WeaponData.evolution_name(str(evo_id)))
 	return ""
 
+# ── Кнопки окон: рестарт и выход в меню (после победы путь другой).
 func _on_restart_pressed() -> void:
 	AudioManager.play("click", -8.0)
 	restart_requested.emit()
@@ -418,12 +436,14 @@ func _on_menu_pressed() -> void:
 	else:
 		menu_requested.emit()
 
+# ── Ввод: Esc, P и Start открывают и закрывают паузу.
 func _input(event: InputEvent) -> void:
 	# Действие "pause": Esc, P и кнопка Start на геймпаде.
 	if event.is_action_pressed("pause"):
 		toggle_pause()
 		get_viewport().set_input_as_handled()
 
+# ── Пауза: не открывается поверх прокачки и экрана результатов.
 func toggle_pause() -> void:
 	# Не открываем паузу поверх прокачки или экрана поражения.
 	if level_up_panel.visible or results_panel.visible:
@@ -438,6 +458,7 @@ func toggle_pause() -> void:
 		pause_continue_button.grab_focus()
 	get_tree().paused = is_paused
 
+# ── Отчёт в паузе: время, убийства, уровень, управление и полная сборка.
 func refresh_pause_stats() -> void:
 	var player = get_tree().get_first_node_in_group("player")
 	var level: int = int(player.get("level")) if player != null else 1
@@ -462,6 +483,7 @@ func _on_pause_continue_pressed() -> void:
 	pause_panel.visible = false
 	get_tree().paused = false
 
+# ── Полоса HP босса и мини-босса.
 func show_boss_bar() -> void:
 	boss_label.visible = true
 	boss_bar.visible = true
@@ -474,6 +496,7 @@ func hide_boss_bar() -> void:
 	boss_label.visible = false
 	boss_bar.visible = false
 
+# ── Крупная надпись по центру: держится 1.4 с и плавно гаснет.
 func announce(text: String, color: Color = Color(1.0, 1.0, 1.0), font_size: int = 34) -> void:
 	# Крупная надпись по центру, которая держится 1.4 с и плавно гаснет.
 	wave_label.text = text
@@ -494,6 +517,7 @@ func _hide_wave_label() -> void:
 func set_boss_name(boss_name: String) -> void:
 	boss_label.text = boss_name
 
+# ── Кнопка переброса: цена и доступность по золоту.
 func update_reroll_cost(cost: int, gold: int) -> void:
 	reroll_button.text = Loc.t("Перебросить (%d золота)") % cost
 	reroll_button.disabled = gold < cost
@@ -505,6 +529,7 @@ func _on_reroll_pressed() -> void:
 	AudioManager.play("click", -8.0)
 	reroll_requested.emit()
 
+# ── Победа: экран результатов и переход в бесконечный режим.
 func show_victory(elapsed: float, kills: int, level: int) -> void:
 	show_results(true, elapsed, kills, level, false)
 

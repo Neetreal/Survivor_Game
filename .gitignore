@@ -1,0 +1,20 @@
+# Godot 4
+.godot/
+*.translation
+
+# Экспорт и сборки
+build/
+export/
+*.pck
+*.zip
+*.exe
+*.x86_64
+*.apk
+*.aab
+
+# Служебное ОС и редакторов
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.tmp
