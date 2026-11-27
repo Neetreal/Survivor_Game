@@ -8,18 +8,6 @@ signal leveled_up
 signal died
 signal stats_changed
 
-# ── Сцены снарядов: preload один раз на старте, чтобы не грузить ресурс на каждый выстрел.
-const OrbitBladeScene: PackedScene = preload("res://scenes/orbit_blade.tscn")
-const ProjectileScene: PackedScene = preload("res://scenes/projectile.tscn")
-const NovaRingScene: PackedScene = preload("res://scenes/nova_ring.tscn")
-const LightningBoltScene: PackedScene = preload("res://scenes/lightning_bolt.tscn")
-const FireballScene: PackedScene = preload("res://scenes/fireball.tscn")
-const BoomerangScene: PackedScene = preload("res://scenes/boomerang.tscn")
-const SpearScene: PackedScene = preload("res://scenes/spear.tscn")
-const MineScene: PackedScene = preload("res://scenes/mine.tscn")
-const PoisonCloudScene: PackedScene = preload("res://scenes/poison_cloud.tscn")
-const SawScene: PackedScene = preload("res://scenes/saw.tscn")
-const ORBIT_RADIUS: float = 72.0
 
 # ── Статы героя: база из Records, дальше их меняют улучшения и магазин.
 # Характеристики (меняются улучшениями)
@@ -92,9 +80,6 @@ var saw_radius: float = 190.0
 var boom_damage: int = 14
 
 ## Переменная урона у каждого заклинания — нужна для карточки «+50% урона одному заклинанию».
-## Стрелы: своя картинка и золотистый след вместо синего магического шара.
-const ARROW_SPRITE: String = "fx_arrow"
-const ARROW_COLOR := Color(1.0, 0.84, 0.42)
 
 # ── Таблица «id заклинания → переменная урона»: нужна карточкам «+50% урону».
 const WEAPON_DAMAGE_VARS := {
@@ -142,17 +127,7 @@ var area_mult: float = 1.0 # Множитель площади/дальност�
 var evolutions: Array = []
 var evolution_names: Dictionary = WeaponData.evolution_names()
 
-# ── Таймеры перезарядки: тикают в _physics_process, на нуле — каст заклинания.
-var bolt_timer: float = 0.0
-var nova_timer: float = 1.2
-var chain_timer: float = 0.6
-var fire_timer: float = 0.4
-var frost_timer: float = 0.5
-var boom_timer: float = 0.8
-var spear_timer: float = 0.4
-var mine_timer: float = 0.8
-var poison_timer: float = 1.0
-var saw_timer: float = 1.4
+# ── Таймер вспышки урона (таймеры оружия живут в player_weapons.gd).
 var flash_timer: float = 0.0
 
 # ── Узлы сцены: спрайт (или фолбэк-кружок), орбита клинков, аура льда.
@@ -160,6 +135,7 @@ var flash_timer: float = 0.0
 @onready var body: Sprite2D = $Body
 @onready var orbit_pivot: Node2D = $OrbitPivot
 @onready var frost_visual: Polygon2D = $FrostVisual
+@onready var weapons: PlayerWeapons = $Weapons
 
 # ── Старт забега: применить героя и магазин, посчитать опыт, собрать клинки.
 func _ready() -> void:
@@ -170,7 +146,8 @@ func _ready() -> void:
 	apply_character(Records.get_character(Records.selected_character))
 	apply_meta_upgrades()
 	xp_next = xp_needed_for_level(level)
-	rebuild_orbit_blades()
+	weapons.p = self # модуль оружия читает статы игрока через эту ссылку
+	weapons.rebuild_orbit_blades()
 	hp_changed.emit(hp, max_hp)
 	xp_changed.emit(xp, xp_next, level)
 	stats_changed.emit()
@@ -263,77 +240,8 @@ func _physics_process(delta: float) -> void:
 	if velocity.length() > 10.0 and visual.visible:
 		visual.rotation = velocity.angle() + PI / 2.0
 	_animate_body(delta, input_dir)
-	# ── Оружие: перезарядка по каждому открытому заклинанию — свой таймер и каст.
-	# Оружие: магические снаряды (если открыто)
-	if unlocked_weapons.has("bolt"):
-		bolt_timer -= delta
-		if bolt_timer <= 0.0:
-			try_fire_bolt()
-			bolt_timer = bolt_cooldown
-	# Оружие: клинки на орбите (если открыто)
-	if unlocked_weapons.has("orbit"):
-		orbit_pivot.rotation += orbit_rotation_speed * delta
-		if has_evo("evo_orbit"):
-			# «Вихрь»: радиус орбиты дышит, клинки прочёсывают большую площадь.
-			var wave: float = 1.0 + sin(float(Time.get_ticks_msec()) / 520.0) * 0.55
-			orbit_pivot.scale = Vector2(wave, wave)
-	# Оружие: нова по площади (если открыто)
-	if unlocked_weapons.has("nova"):
-		nova_timer -= delta
-		if nova_timer <= 0.0:
-			trigger_nova()
-			nova_timer = nova_cooldown
-	# Оружие: цепная молния (если открыто)
-	if unlocked_weapons.has("chain"):
-		chain_timer -= delta
-		if chain_timer <= 0.0:
-			trigger_chain()
-			chain_timer = chain_cooldown
-	# Оружие: огненный шар (если открыто)
-	if unlocked_weapons.has("fireball"):
-		fire_timer -= delta
-		if fire_timer <= 0.0:
-			try_fire_fireball()
-			fire_timer = fire_cooldown
-	# Оружие: ледяная аура (если открыто)
-	if unlocked_weapons.has("frost"):
-		frost_visual.visible = true
-		frost_visual.scale = Vector2.ONE * (scaled_area(frost_radius) / 130.0)
-		frost_visual.modulate.a = 0.10 + sin(float(Time.get_ticks_msec()) / 300.0) * 0.04
-		frost_timer -= delta
-		if frost_timer <= 0.0:
-			frost_tick()
-			frost_timer = 0.5
-	# Оружие: бумеранг (если открыто)
-	if unlocked_weapons.has("boomerang"):
-		boom_timer -= delta
-		if boom_timer <= 0.0:
-			try_throw_boomerang()
-			boom_timer = boom_cooldown
-	# Оружие: копьё
-	if unlocked_weapons.has("spear"):
-		spear_timer -= delta
-		if spear_timer <= 0.0:
-			try_throw_spear()
-			spear_timer = spear_cooldown
-	# Оружие: мины
-	if unlocked_weapons.has("mine"):
-		mine_timer -= delta
-		if mine_timer <= 0.0:
-			drop_mine()
-			mine_timer = mine_cooldown
-	# Оружие: ядовитое облако
-	if unlocked_weapons.has("poison"):
-		poison_timer -= delta
-		if poison_timer <= 0.0:
-			cast_poison()
-			poison_timer = poison_cooldown
-	# Оружие: пила
-	if unlocked_weapons.has("saw"):
-		saw_timer -= delta
-		if saw_timer <= 0.0:
-			throw_saw()
-			saw_timer = saw_cooldown
+	# ── Оружие: вся перезарядка и касты — в дочернем узле Weapons (player_weapons.gd).
+	weapons.tick(delta)
 	# Вспышка при уроне
 	if flash_timer > 0.0:
 		flash_timer -= delta
@@ -464,198 +372,7 @@ func unlock_evolution(evo_id: String) -> void:
 	FX.burst(global_position, Color(1.0, 0.9, 0.4), 30, 180.0)
 	stats_changed.emit()
 
-func refresh_orbit_damage() -> void:
-	for blade in orbit_pivot.get_children():
-		blade.damage = scaled_damage(orbit_damage)
-
-# ── Стрельба: по функции на заклинание, каждая сама ищет цель и спавнит снаряд.
-func try_fire_bolt() -> void:
-	# Каждый снаряд выбирает СВОЮ ближайшую цель (как в Vampire Survivors),
-	# чтобы несколько снарядов не летели в одну точку и не теряли урон.
-	var targets: Array = []
-	var bolt_range_now: float = scaled_area(bolt_range)
-	var bolt_damage_now: int = scaled_damage(bolt_damage)
-	# Пробитие — обычная стата: карта «Пробитие +1» до 4, эволюция «Залп» снимает предел.
-	var pierce_count: int = bolt_pierce
-	var spread_step: float = 0.22 if has_evo("evo_bolt") else 0.14
-	for i in range(bolt_count):
-		var target = find_nearest_enemy(targets, bolt_range_now)
-		if target == null:
-			# Все цели в радиусе уже назначены — остальные снаряды в ближайшую.
-			target = find_nearest_enemy([], bolt_range_now)
-		if target == null:
-			return # Врагов в радиусе нет — не стреляем
-		targets.append(target)
-		var base_angle: float = (target.global_position - global_position).angle()
-		var spread: float = (float(i) - float(bolt_count - 1) / 2.0) * spread_step
-		var angle: float = base_angle + spread
-		var dir: Vector2 = Vector2.from_angle(angle)
-		# Разносим точки спавна вбок, чтобы снаряды не стартовали из одной точки.
-		var side_offset: float = (float(i) - float(bolt_count - 1) / 2.0) * 20.0
-		var spawn_pos: Vector2 = global_position + dir * 20.0 + Vector2(-dir.y, dir.x) * side_offset
-		var projectile = ProjectileScene.instantiate()
-		projectile.configure(angle, bolt_damage_now, bolt_speed, pierce_count, spawn_pos, bolt_range_now,
-			bolt_ricochet, bolt_homing, ARROW_SPRITE, ARROW_COLOR)
-		get_tree().current_scene.call_deferred("add_child", projectile)
-	AudioManager.play("shoot", -10.0)
-
-func trigger_nova() -> void:
-	AudioManager.play("nova", -6.0)
-	FX.shake(0.3, 4.0)
-	var radius: float = scaled_area(nova_radius)
-	var dmg: int = scaled_damage(nova_damage)
-	var ring = NovaRingScene.instantiate()
-	ring.configure(radius, global_position)
-	get_tree().current_scene.call_deferred("add_child", ring)
-	var dealt: int = 0
-	for enemy in Enemies.all():
-		if global_position.distance_to(enemy.global_position) <= radius:
-			enemy.call("take_damage", dmg, global_position, "nova")
-			dealt += dmg
-	# «Взрывная волна»: вампиризм с нанесённого урона.
-	if has_evo("evo_nova") and dealt > 0:
-		heal(maxi(1, int(float(dealt) * 0.05)))
-
-func trigger_chain() -> void:
-	AudioManager.play("lightning", -8.0)
-	var search_range: float = 900.0 if has_evo("evo_chain") else scaled_area(chain_range)
-	var first = find_nearest_enemy([], search_range)
-	if first == null:
-		return
-	var hit: Array = []
-	var points: Array = [global_position]
-	var current = first
-	var prev_pos: Vector2 = global_position
-	while current != null and hit.size() <= chain_jumps:
-		hit.append(current)
-		points.append(current.global_position)
-		# Урон затухает с каждой цепью: 100% -> 80% -> 64% -> ...
-		var dmg: int = maxi(1, int(float(scaled_damage(chain_damage)) * pow(0.8, float(hit.size() - 1))))
-		current.call("take_damage", dmg, prev_pos, "chain")
-		prev_pos = current.global_position
-		current = find_chain_next(prev_pos, hit)
-	var bolt = LightningBoltScene.instantiate()
-	bolt.configure(points)
-	get_tree().current_scene.call_deferred("add_child", bolt)
-
-func find_chain_next(from_pos: Vector2, exclude: Array):
-	var best = null
-	var best_dist: float = 999999999.0
-	var jump_range: float = scaled_area(chain_jump_range)
-	var max_sq: float = jump_range * jump_range
-	for enemy in Enemies.all():
-		if exclude.has(enemy) or enemy.is_queued_for_deletion():
-			continue
-		var d: float = from_pos.distance_squared_to(enemy.global_position)
-		if d < best_dist and d <= max_sq:
-			best_dist = d
-			best = enemy
-	return best
-
-func try_fire_fireball() -> void:
-	var targets: Array = []
-	for i in range(fire_count):
-		var target = find_nearest_enemy(targets, bolt_range)
-		if target == null:
-			target = find_nearest_enemy([], bolt_range)
-		if target == null:
-			return
-		targets.append(target)
-		var base_angle: float = (target.global_position - global_position).angle()
-		var spread: float = (float(i) - float(fire_count - 1) / 2.0) * 0.14
-		var angle: float = base_angle + spread
-		var dir: Vector2 = Vector2.from_angle(angle)
-		var side_offset: float = (float(i) - float(fire_count - 1) / 2.0) * 20.0
-		var spawn_pos: Vector2 = global_position + dir * 20.0 + Vector2(-dir.y, dir.x) * side_offset
-		var dmg: int = scaled_damage(fire_damage)
-		var radius: float = scaled_area(fire_radius)
-		if has_evo("evo_fire"):
-			dmg = int(round(float(dmg) * 1.4))
-			radius *= 1.8
-		var fireball = FireballScene.instantiate()
-		fireball.configure(angle, dmg, 460.0, radius, spawn_pos)
-		get_tree().current_scene.call_deferred("add_child", fireball)
-	AudioManager.play("shoot", -10.0, 0.7)
-
-func frost_tick() -> void:
-	var radius: float = scaled_area(frost_radius)
-	var dmg: int = scaled_damage(frost_damage)
-	for enemy in Enemies.all():
-		if global_position.distance_to(enemy.global_position) <= radius:
-			enemy.set("slow_timer", 0.6)
-			enemy.set("slow_factor", frost_slow)
-			enemy.call("take_damage", dmg, global_position, "frost")
-
-func try_throw_boomerang() -> void:
-	var target = find_nearest_enemy([], bolt_range)
-	if target == null:
-		return
-	var base_angle: float = (target.global_position - global_position).angle()
-	for i in range(boom_count):
-		var spread: float = (float(i) - float(boom_count - 1) / 2.0) * 0.35
-		var angle: float = base_angle + spread
-		var dir: Vector2 = Vector2.from_angle(angle)
-		var boom = BoomerangScene.instantiate()
-		boom.configure(angle, scaled_damage(boom_damage), 430.0, scaled_area(boom_range), global_position + dir * 20.0)
-		get_tree().current_scene.call_deferred("add_child", boom)
-	AudioManager.play("boomerang", -8.0)
-
-func try_throw_spear() -> void:
-	var search_range: float = scaled_area(spear_range)
-	var target = find_nearest_enemy([], search_range)
-	if target == null:
-		return
-	var base_angle: float = (target.global_position - global_position).angle()
-	for i in range(spear_count):
-		var spread: float = (float(i) - float(spear_count - 1) / 2.0) * 0.12
-		var angle: float = base_angle + spread
-		var dir: Vector2 = Vector2.from_angle(angle)
-		var spear = SpearScene.instantiate()
-		spear.configure(angle, scaled_damage(spear_damage), spear_speed, search_range, global_position + dir * 24.0)
-		get_tree().current_scene.call_deferred("add_child", spear)
-	AudioManager.play("boomerang", -12.0, 1.35)
-
-func drop_mine() -> void:
-	for i in range(mine_count):
-		var angle: float = TAU * float(i) / float(maxi(mine_count, 1)) + randf() * 0.4
-		var pos: Vector2 = global_position + Vector2(cos(angle), sin(angle)) * 28.0
-		var mine = MineScene.instantiate()
-		mine.configure(scaled_damage(mine_damage), scaled_area(mine_radius), pos)
-		get_tree().current_scene.call_deferred("add_child", mine)
-	AudioManager.play("click", -16.0, 0.55)
-
-func cast_poison() -> void:
-	var pos: Vector2 = global_position
-	var target = find_nearest_enemy([], scaled_area(bolt_range))
-	if target != null:
-		pos = target.global_position
-	var cloud = PoisonCloudScene.instantiate()
-	cloud.configure(scaled_damage(poison_damage), scaled_area(poison_radius), poison_duration, pos)
-	get_tree().current_scene.call_deferred("add_child", cloud)
-	AudioManager.play("nova", -16.0, 0.55)
-
-func throw_saw() -> void:
-	for i in range(saw_count):
-		var saw = SawScene.instantiate()
-		saw.configure(scaled_damage(saw_damage), scaled_area(saw_radius), global_position)
-		get_tree().current_scene.call_deferred("add_child", saw)
-	AudioManager.play("boomerang", -14.0, 0.75)
-
-# ── Клинки на орбите: пересборка узлов после смены количества, размера или урона.
-func rebuild_orbit_blades() -> void:
-	for child in orbit_pivot.get_children():
-		orbit_pivot.remove_child(child)
-		child.queue_free()
-	if not unlocked_weapons.has("orbit"):
-		return
-	for i in range(orbit_blade_count):
-		var blade = OrbitBladeScene.instantiate()
-		blade.damage = scaled_damage(orbit_damage)
-		blade.scale = Vector2(orbit_blade_size, orbit_blade_size)
-		orbit_pivot.add_child(blade)
-		var angle: float = TAU * float(i) / float(orbit_blade_count)
-		blade.position = Vector2(cos(angle), sin(angle)) * ORBIT_RADIUS
-		blade.rotation = angle + PI / 2.0
+# ── Оружие (каст, таймеры, сцены снарядов, клинки) — в scripts/player_weapons.gd.
 
 # ── Урон игроку и лечение: броня, вспышка, тряска, сигнал HP, смерть.
 func take_damage(amount: int) -> void:
@@ -773,7 +490,7 @@ func unlock_spell(spell_id: String) -> void:
 	if not unlocked_weapons.has(spell_id):
 		unlocked_weapons.append(spell_id)
 	if spell_id == "orbit":
-		rebuild_orbit_blades()
+		weapons.rebuild_orbit_blades()
 	stats_changed.emit()
 
 # ── Урон заклинаний: чтение, подъём на 50% и готовая карточка «+50% урону».
@@ -794,7 +511,7 @@ func boost_weapon_damage(weapon_id: String) -> Dictionary:
 	var after: int = maxi(before + 1, int(round(float(before) * LEVEL5_DAMAGE_BONUS)))
 	set(stat, after)
 	if weapon_id == "orbit":
-		refresh_orbit_damage()
+		weapons.refresh_orbit_damage()
 	elif weapon_id == "saw":
 		pass # урон пилы передаётся при каждом спавне
 	stats_changed.emit()
@@ -915,10 +632,9 @@ func _apply_stat_upgrade(entry: Dictionary) -> void:
 func _run_weapon_hook(hook: String) -> void:
 	match hook:
 		"orbit_damage":
-			refresh_orbit_damage()
+			weapons.refresh_orbit_damage()
 		"orbit_rebuild":
-			rebuild_orbit_blades()
+			weapons.rebuild_orbit_blades()
 		"orbit_size":
-			for blade in orbit_pivot.get_children():
-				blade.scale = Vector2(orbit_blade_size, orbit_blade_size)
+			weapons.apply_orbit_size()
 

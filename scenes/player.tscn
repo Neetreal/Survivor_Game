@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
+[ext_resource type="Script" path="res://scripts/player_weapons.gd" id="2_weapons"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
 radius = 14.0
@@ -38,3 +39,6 @@ limit_right = 1600
 limit_bottom = 1600
 
 [node name="OrbitPivot" type="Node2D" parent="."]
+
+[node name="Weapons" type="Node" parent="."]
+script = ExtResource("2_weapons")

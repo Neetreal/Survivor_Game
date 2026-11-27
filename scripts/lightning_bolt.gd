@@ -1,6 +1,6 @@
 extends Node2D
 ## Молния: рисует зигзаг между точками цепи и быстро гаснет.
-## Чисто визуальный эффект — урон наносит игрок в trigger_chain (player.gd).
+## Чисто визуальный эффект — урон наносит игрок в trigger_chain (player_weapons.gd).
 
 var pending_points: Array = []
 var life: float = 0.18
