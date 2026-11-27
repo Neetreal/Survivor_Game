@@ -1,6 +1,13 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://scripts/menu/menu_records.gd" id="3_records"]
+[ext_resource type="Script" path="res://scripts/menu/menu_play.gd" id="4_play"]
+[ext_resource type="Script" path="res://scripts/menu/menu_shop.gd" id="5_shop"]
+[ext_resource type="Script" path="res://scripts/menu/menu_profile.gd" id="6_profile"]
+[ext_resource type="Script" path="res://scripts/menu/menu_achievements.gd" id="7_achievements"]
+[ext_resource type="Script" path="res://scripts/menu/menu_settings.gd" id="8_settings"]
+[ext_resource type="Script" path="res://scripts/menu/menu_confirm.gd" id="9_confirm"]
 [ext_resource type="Theme" path="res://scenes/ui_theme.tres" id="2_theme"]
 
 [sub_resource type="StyleBoxFlat" id="danger_normal"]
@@ -131,6 +138,7 @@ anchor_bottom = 1.0
 color = Color(0, 0, 0, 0.65)
 
 [node name="RecordsPanel" type="PanelContainer" parent="."]
+script = ExtResource("3_records")
 custom_minimum_size = Vector2(640.0, 540.0)
 visible = false
 anchor_left = 0.5
@@ -169,6 +177,7 @@ theme_override_font_sizes/font_size = 18
 text = "Назад"
 
 [node name="CharacterPanel" type="PanelContainer" parent="."]
+script = ExtResource("4_play")
 custom_minimum_size = Vector2(680.0, 640.0)
 visible = false
 anchor_left = 0.5
@@ -274,6 +283,7 @@ theme_override_font_sizes/font_size = 18
 text = "Назад"
 
 [node name="ShopPanel" type="PanelContainer" parent="."]
+script = ExtResource("5_shop")
 custom_minimum_size = Vector2(680.0, 580.0)
 visible = false
 anchor_left = 0.5
@@ -322,6 +332,7 @@ theme_override_font_sizes/font_size = 18
 text = "Назад"
 
 [node name="ProfilePanel" type="PanelContainer" parent="."]
+script = ExtResource("6_profile")
 custom_minimum_size = Vector2(600.0, 520.0)
 visible = false
 anchor_left = 0.5
@@ -361,6 +372,7 @@ theme_override_font_sizes/font_size = 18
 text = "Назад"
 
 [node name="AchievementsPanel" type="PanelContainer" parent="."]
+script = ExtResource("7_achievements")
 custom_minimum_size = Vector2(680.0, 600.0)
 visible = false
 anchor_left = 0.5
@@ -407,6 +419,7 @@ theme_override_font_sizes/font_size = 18
 text = "Назад"
 
 [node name="SettingsPanel" type="PanelContainer" parent="."]
+script = ExtResource("8_settings")
 custom_minimum_size = Vector2(760.0, 486.0)
 visible = false
 anchor_left = 0.5
@@ -632,6 +645,7 @@ theme_override_font_sizes/font_size = 18
 text = "Назад"
 
 [node name="ConfirmPanel" type="PanelContainer" parent="."]
+script = ExtResource("9_confirm")
 custom_minimum_size = Vector2(620.0, 330.0)
 visible = false
 anchor_left = 0.5
