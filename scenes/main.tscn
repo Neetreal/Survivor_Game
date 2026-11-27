@@ -1,10 +1,13 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
 [ext_resource type="Script" path="res://scripts/hud.gd" id="3_hud"]
 [ext_resource type="Theme" path="res://scenes/ui_theme.tres" id="4_ui"]
 [ext_resource type="Script" path="res://scripts/min_scroll.gd" id="5_minscroll"]
+[ext_resource type="Script" path="res://scripts/hud/hud_levelup.gd" id="11_levelup"]
+[ext_resource type="Script" path="res://scripts/hud/hud_results.gd" id="12_results"]
+[ext_resource type="Script" path="res://scripts/hud/hud_pause.gd" id="13_pause"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_h"]
 size = Vector2(3232, 24)
@@ -229,6 +232,7 @@ anchor_bottom = 1.0
 color = Color(0, 0, 0, 0.65)
 
 [node name="LevelUpPanel" type="PanelContainer" parent="HUD"]
+script = ExtResource("11_levelup")
 custom_minimum_size = Vector2(520.0, 380.0)
 theme = ExtResource("4_ui")
 visible = false
@@ -272,6 +276,7 @@ theme_override_font_sizes/font_size = 16
 text = "Перебросить (10 золота)"
 
 [node name="ResultsPanel" type="PanelContainer" parent="HUD"]
+script = ExtResource("12_results")
 custom_minimum_size = Vector2(640.0, 560.0)
 theme = ExtResource("4_ui")
 visible = false
@@ -447,6 +452,7 @@ theme_override_font_sizes/font_size = 18
 text = "В меню"
 
 [node name="PausePanel" type="PanelContainer" parent="HUD"]
+script = ExtResource("13_pause")
 custom_minimum_size = Vector2(600.0, 540.0)
 theme = ExtResource("4_ui")
 visible = false
