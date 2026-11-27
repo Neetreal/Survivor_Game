@@ -55,6 +55,10 @@ var special_timer: float = 2.0
 var shield_hits: int = 0
 # Вектор отталкивания от соседей, считается один раз за кадр в main.gd (сетка)
 var separation_push: Vector2 = Vector2.ZERO
+# LOD: враг в пределах экрана. За экраном он просто идёт к игроку — расталкивание,
+# «спец»-логика и анимация не считаются (см. _is_on_screen и main.update_separation).
+var on_screen: bool = true
+var lod_timer: float = 0.0
 # Лекарь
 var heal_timer: float = 2.5
 # Сколько всего вылечили этому врагу (лекари больше не бесконечный источник HP)
@@ -86,6 +90,12 @@ var walk_frames: Array = []
 var _frame_time: float = 0.0
 var _frame_index: int = 0
 const ENEMY_WALK_FPS: float = 8.0
+
+# ── LOD за экраном: как часто проверяем видимость и какой запас считаем «экраном».
+# Запас важнее частоты: за интервал враг не должен успеть влететь в кадр с замороженной
+# анимацией. Самый быстрый — рывок босса 450 px/с, это 68 px за 0.15 с < 160 px запаса.
+const LOD_CHECK_INTERVAL: float = 0.15
+const LOD_MARGIN: float = 160.0
 
 func configure(type: String, hp_multiplier: float, spawn_position: Vector2, damage_multiplier: float = 1.0, speed_multiplier: float = 1.0) -> void:
 	pending_type = type
@@ -257,6 +267,12 @@ func _physics_process(delta: float) -> void:
 		flash_timer -= delta
 		if flash_timer <= 0.0:
 			set_flash(Color.WHITE)
+	# LOD: видимость проверяем редко — шесть раз в секунду вместо каждого кадра.
+	lod_timer -= delta
+	if lod_timer <= 0.0:
+		# Небольшой разброс: враги не проверяются все в одном кадре.
+		lod_timer = LOD_CHECK_INTERVAL * randf_range(0.85, 1.15)
+		on_screen = _is_on_screen()
 	if player == null:
 		player = get_tree().get_first_node_in_group("player")
 		if player == null:
@@ -265,8 +281,8 @@ func _physics_process(delta: float) -> void:
 	var dir: Vector2 = Vector2.ZERO
 	if to_player.length() > 1.0:
 		dir = to_player.normalized()
-	# Пожиратель кристаллов охотится за опытом, а не за игроком.
-	if enemy_type == "gem_eater":
+	# Пожиратель кристаллов охотится за опытом, а не за игроком (только в пределах экрана).
+	if enemy_type == "gem_eater" and on_screen:
 		gem_scan_timer -= delta
 		if gem_scan_timer <= 0.0:
 			gem_scan_timer = 0.3
@@ -278,19 +294,20 @@ func _physics_process(delta: float) -> void:
 				eat_target = null
 			else:
 				dir = to_gem.normalized()
-	# Лекарь время от времени лечит соседей.
-	if enemy_type == "healer":
+	# Лекарь время от времени лечит соседей — это видно, только когда он на экране.
+	if enemy_type == "healer" and on_screen:
 		healer_tick(delta)
 	knockback_velocity = knockback_velocity.lerp(Vector2.ZERO, clampf(8.0 * delta, 0.0, 1.0))
-	# Разделение: враги расталкивают друг друга и не скапливаются в одной точке.
+	# У мини-босса своя «фишка», и она работает даже за экраном — иначе от него не убежать.
 	if is_mini_boss:
 		mini_boss_special(delta)
-	var separation: Vector2 = calculate_separation()
+	# Разделение: вектор готовит main.update_separation по сетке — только для видимых.
+	var separation: Vector2 = calculate_separation() if on_screen else Vector2.ZERO
 	var effective_speed: float = speed * (slow_factor if slow_timer > 0.0 else 1.0)
 	var velocity: Vector2
 	if enemy_type == "boss":
 		velocity = boss_movement(delta, dir, separation, effective_speed)
-	elif enemy_type == "spitter":
+	elif enemy_type == "spitter" and on_screen:
 		# Плевун держит дистанцию и стреляет издалека.
 		var dist_to_player: float = to_player.length()
 		var move_dir: Vector2 = Vector2.ZERO
@@ -306,13 +323,14 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity = dir * effective_speed + separation * 110.0 + knockback_velocity
 	global_position += velocity * delta
-	# Лёгкая пульсация для "живости"
-	var pulse: float = 1.0 + sin(float(Time.get_ticks_msec()) / 180.0 + float(get_instance_id() % 10)) * 0.06
-	if enemy_type == "boss" and attack_state == "telegraph":
-		pulse = 1.18 + sin(float(Time.get_ticks_msec()) / 40.0) * 0.08 # Дрожь перед рывком
-	visual.scale = Vector2(pulse, pulse)
-	body.scale = Vector2(pulse, pulse)
-	_animate_body(delta)
+	# Пульсация и покадровая анимация нужны только там, где их видно.
+	if on_screen:
+		var pulse: float = 1.0 + sin(float(Time.get_ticks_msec()) / 180.0 + float(get_instance_id() % 10)) * 0.06
+		if enemy_type == "boss" and attack_state == "telegraph":
+			pulse = 1.18 + sin(float(Time.get_ticks_msec()) / 40.0) * 0.08 # Дрожь перед рывком
+		visual.scale = Vector2(pulse, pulse)
+		body.scale = Vector2(pulse, pulse)
+		_animate_body(delta)
 
 func boss_movement(delta: float, dir: Vector2, separation: Vector2, effective_speed: float) -> Vector2:
 	# Атака 1: кольцо снарядов во все стороны.
@@ -613,6 +631,12 @@ func _animate_body(delta: float) -> void:
 	var bob: float = absf(sin(_bob_phase + float(get_instance_id() % 7))) * 2.0
 	body.position.y = -bob
 	body.rotation = sin(_bob_phase) * 0.05
+
+## Виден ли враг: сравниваем экранные координаты с прямоугольником экрана плюс запас.
+## Экранные координаты берём у камеры, поэтому зум и сдвиг учитываются сами.
+func _is_on_screen() -> bool:
+	var screen_pos: Vector2 = get_global_transform_with_canvas().origin
+	return get_viewport_rect().grow(LOD_MARGIN).has_point(screen_pos)
 
 func calculate_separation() -> Vector2:
 	# Готовый вектор отталкивания: его один раз за кадр считает main.gd

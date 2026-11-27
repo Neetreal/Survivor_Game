@@ -72,20 +72,27 @@ func update_separation() -> void:
 	var enemies: Array = Enemies.all()
 	if enemies.is_empty():
 		return
+	# LOD: расталкиваем только видимых — враги за экраном идут по прямой к игроку.
+	# Вектор всё равно обнуляем, иначе у вернувшегося на экран врага остался бы старый толчок.
 	var buckets: Dictionary = {}
+	var visible: Array = []
 	for enemy in enemies:
 		if enemy.is_queued_for_deletion():
 			continue
 		enemy.set("separation_push", Vector2.ZERO)
+		# Сравнение именно с false: если поле вдруг не найдётся, врага оставляем в сетке.
+		if enemy.get("on_screen") == false:
+			continue
+		visible.append(enemy)
 		var pos: Vector2 = enemy.global_position
 		var key: Vector2i = Vector2i(int(floor(pos.x / SEPARATION_CELL)), int(floor(pos.y / SEPARATION_CELL)))
 		if buckets.has(key):
 			buckets[key].append(enemy)
 		else:
 			buckets[key] = [enemy]
-	for enemy in enemies:
-		if enemy.is_queued_for_deletion():
-			continue
+	if visible.is_empty():
+		return
+	for enemy in visible:
 		var pos: Vector2 = enemy.global_position
 		var my_scale: float = float(enemy.get("scale").x)
 		var key: Vector2i = Vector2i(int(floor(pos.x / SEPARATION_CELL)), int(floor(pos.y / SEPARATION_CELL)))
