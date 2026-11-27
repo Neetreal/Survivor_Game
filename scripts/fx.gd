@@ -77,7 +77,8 @@ func clear_shake() -> void:
 		cam.offset = Vector2.ZERO
 
 func flash(flash_color: Color = Color(1.0, 0.0, 0.0), alpha: float = 0.35, duration: float = 0.35) -> void:
-	if flash_rect == null:
+	# Вспышки выключены в настройках — не рисуем совсем (мигание мешает не всем одинаково).
+	if flash_rect == null or not Records.settings_flashes:
 		return
 	flash_rect.color = Color(flash_color.r, flash_color.g, flash_color.b, alpha * Records.quality_flash_scale())
 	if flash_tween != null and flash_tween.is_valid():

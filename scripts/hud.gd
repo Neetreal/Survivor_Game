@@ -57,6 +57,8 @@ func _ready() -> void:
 	level_up_window.hud = self
 	results_window.hud = self
 	pause_window.hud = self
+	# Пауза при потере фокуса окна: забег не идёт, пока игрок переключился.
+	get_window().focus_exited.connect(_on_window_focus_lost)
 	var player = get_tree().get_first_node_in_group("player")
 	if player != null:
 		player.connect("hp_changed", _on_hp_changed)
@@ -165,6 +167,13 @@ func show_victory(elapsed: float, kills: int, level: int) -> void:
 
 func hide_victory() -> void:
 	results_window.hide()
+
+# ── Потеря фокуса окна: ставим паузу, чтобы забег не шёл «за спиной».
+## Не трогаем, если уже пауза или открыт выбор/экран результатов.
+func _on_window_focus_lost() -> void:
+	if is_paused or level_up_window.visible or results_window.visible:
+		return
+	open_pause()
 
 # ── Ввод: Esc, P и Start открывают и закрывают паузу.
 func _input(event: InputEvent) -> void:

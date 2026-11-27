@@ -435,6 +435,8 @@ func heal_enemy(amount: int) -> int:
 	return actual
 
 func spawn_heal_number(amount: int) -> void:
+	if not Records.show_floating_numbers():
+		return
 	var dn = DamageNumberScene.instantiate()
 	dn.call("configure_heal", amount, global_position + Vector2(randf_range(-8.0, 8.0), -20.0))
 	var game = get_tree().get_first_node_in_group("game")
@@ -673,7 +675,7 @@ func take_damage(amount: int, from_position: Vector2, source_id: String = "other
 
 func spawn_damage_number(amount: int) -> void:
 	# На низком качестве графики цифры урона отключены — меньше узлов и визуального шума.
-	if not Records.quality_damage_numbers():
+	if not Records.show_floating_numbers():
 		return
 	var dn = DamageNumberScene.instantiate()
 	dn.configure(amount, global_position + Vector2(-8.0, -26.0))

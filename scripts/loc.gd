@@ -374,6 +374,8 @@ const EN: Dictionary = {
 	"Среднее": "Medium",
 	"Высокое": "High",
 	"Показ FPS": "Show FPS",
+	"Цифры урона": "Damage numbers",
+	"Вспышки экрана": "Screen flashes",
 	"Масштаб интерфейса": "Interface scale",
 	"Мелкий": "Small",
 	"Обычный": "Normal",
