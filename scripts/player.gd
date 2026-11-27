@@ -18,7 +18,7 @@ var armor: int = 0
 var magnet_radius: float = 95.0
 var xp_multiplier: float = 1.0
 
-# ── Статы заклинаний: своя группа переменных у каждого, имена собраны в WEAPON_DAMAGE_VARS.
+# ── Статы заклинаний: своя группа переменных у каждого; таблицу имён держит player_upgrades.gd.
 var bolt_damage: int = 12
 var bolt_cooldown: float = 0.9
 var bolt_count: int = 1
@@ -81,22 +81,6 @@ var boom_damage: int = 14
 
 ## Переменная урона у каждого заклинания — нужна для карточки «+50% урона одному заклинанию».
 
-# ── Таблица «id заклинания → переменная урона»: нужна карточкам «+50% урону».
-const WEAPON_DAMAGE_VARS := {
-	"bolt": "bolt_damage",
-	"orbit": "orbit_damage",
-	"nova": "nova_damage",
-	"chain": "chain_damage",
-	"fireball": "fire_damage",
-	"frost": "frost_damage",
-	"boomerang": "boom_damage",
-	"spear": "spear_damage",
-	"mine": "mine_damage",
-	"poison": "poison_damage",
-	"saw": "saw_damage",
-}
-## Прибавка урона за карточку 5-го уровня.
-const LEVEL5_DAMAGE_BONUS: float = 1.5
 var boom_cooldown: float = 1.6
 var boom_count: int = 1
 var boom_range: float = 210.0 # Дальность вылета бумеранга
@@ -136,6 +120,7 @@ var flash_timer: float = 0.0
 @onready var orbit_pivot: Node2D = $OrbitPivot
 @onready var frost_visual: Polygon2D = $FrostVisual
 @onready var weapons: PlayerWeapons = $Weapons
+@onready var upgrades: PlayerUpgrades = $Upgrades
 
 # ── Старт забега: применить героя и магазин, посчитать опыт, собрать клинки.
 func _ready() -> void:
@@ -147,6 +132,7 @@ func _ready() -> void:
 	apply_meta_upgrades()
 	xp_next = xp_needed_for_level(level)
 	weapons.p = self # модуль оружия читает статы игрока через эту ссылку
+	upgrades.p = self # модуль прокачки — тоже
 	weapons.rebuild_orbit_blades()
 	hp_changed.emit(hp, max_hp)
 	xp_changed.emit(xp, xp_next, level)
@@ -342,36 +328,6 @@ func scaled_damage(base: int) -> int:
 func scaled_area(radius: float) -> float:
 	return radius * area_mult
 
-## Доступные эволюции считаются из данных оружия (см. UpgradePool).
-func get_available_evolutions() -> Array:
-	return UpgradePool.available_evolutions(self)
-
-# ── Пассивки и эволюции: выдача уровня пассивки и разблокировка эволюции оружия.
-func apply_passive(passive_id: String) -> void:
-	var def: Dictionary = PassiveData.by_id(passive_id)
-	if def.is_empty():
-		return
-	var lvl: int = passive_level(passive_id)
-	if lvl >= int(def["max"]):
-		return
-	passive_levels[passive_id] = lvl + 1
-	_apply_stat_upgrade(def)
-	AudioManager.play("levelup", -14.0)
-	hp_changed.emit(hp, max_hp)
-	stats_changed.emit()
-
-func unlock_evolution(evo_id: String) -> void:
-	if evolutions.has(evo_id):
-		return
-	evolutions.append(evo_id)
-	# Постоянные бонусы берутся из данных; ситуативные эффекты
-	# (лечение от новы, метеор, заморозка) проверяются через has_evo().
-	for entry in WeaponData.evolution_effects(evo_id):
-		_apply_stat_upgrade(entry)
-	AudioManager.play("victory", -12.0)
-	FX.burst(global_position, Color(1.0, 0.9, 0.4), 30, 180.0)
-	stats_changed.emit()
-
 # ── Оружие (каст, таймеры, сцены снарядов, клинки) — в scripts/player_weapons.gd.
 
 # ── Урон игроку и лечение: броня, вспышка, тряска, сигнал HP, смерть.
@@ -421,220 +377,35 @@ func add_xp(amount: int) -> void:
 func xp_needed_for_level(lvl: int) -> int:
 	return int(5.0 + float(lvl - 1) * 4.0 + pow(float(lvl - 1), 1.6))
 
-# ── Выбор улучшений: карточки уровня и эволюции за ядро мини-босса.
-## Карточки на экране прокачки: пул собирается из данных (см. UpgradePool).
-## Эволюций здесь больше нет — их выдаёт мини-босс, см. get_evolution_choices().
+# ── Прокачка (карточки, пассивки, эволюции, отчёт) — в scripts/player_upgrades.gd.
+# Здесь только публичные обёртки: по этим именам игрока вызывают main.gd и hud.gd.
 func get_upgrade_choices(count: int) -> Array:
-	var pool: Array = UpgradePool.build(self)
-	pool.shuffle()
-	return pool.slice(0, mini(count, pool.size()))
+	return upgrades.get_upgrade_choices(count)
 
-## Эволюции, доступные за ядро мини-босса. Пустой список — игрок получит обычные улучшения.
 func get_evolution_choices(count: int = 3) -> Array:
-	var available: Array = get_available_evolutions()
-	available.shuffle()
-	return available.slice(0, mini(count, available.size()))
+	return upgrades.get_evolution_choices(count)
 
-# ── Отчёт для паузы: герой, оружие, пассивки, эволюции одним текстом.
-func build_report() -> String:
-	var lines: Array = []
-	var char_data: Dictionary = Records.get_character(Records.selected_character)
-	lines.append(Loc.t("ГЕРОЙ — %s") % Loc.t(str(char_data.get("name", "?"))))
-	lines.append(Loc.t("HP %d / %d   •   Броня %d   •   Скорость %d") % [hp, max_hp, armor, int(speed)])
-	lines.append(Loc.t("Урон оружия ×%.2f   •   Площадь ×%.2f   •   Опыт ×%.2f   •   Магнит %d") % [damage_mult, area_mult, xp_multiplier, int(magnet_radius)])
-	lines.append("")
-	var weapon_names: Dictionary = {}
-	for spell in get_spell_choices_all():
-		weapon_names[str(spell["id"])] = str(spell["title"])
-	lines.append(Loc.t("ОРУЖИЕ (%d)") % unlocked_weapons.size())
-	for weapon_id_raw in unlocked_weapons:
-		var weapon_id: String = str(weapon_id_raw)
-		var weapon_name: String = Loc.t(str(weapon_names.get(weapon_id, weapon_id)))
-		lines.append("• %s — %s" % [weapon_name, weapon_details(weapon_id)])
-	lines.append("")
-	var owned_passives: Array = []
-	for passive_def in passive_definitions:
-		var pid: String = str(passive_def["id"])
-		var lvl: int = passive_level(pid)
-		if lvl > 0:
-			owned_passives.append("• %s %d/%d — %s" % [Loc.t(str(passive_def["name"])), lvl, int(passive_def["max"]), Loc.t(str(passive_def["desc"]))])
-	if owned_passives.size() > 0:
-		lines.append(Loc.t("ПАССИВКИ (%d)") % owned_passives.size())
-		lines.append_array(owned_passives)
-		lines.append("")
-	if evolutions.size() > 0:
-		lines.append(Loc.t("ЭВОЛЮЦИИ (%d)") % evolutions.size())
-		for evo_id_raw in evolutions:
-			lines.append("• %s" % Loc.t(str(evolution_names.get(str(evo_id_raw), str(evo_id_raw)))))
-	return "\n".join(PackedStringArray(lines))
-
-## Все заклинания без фильтра «чего ещё нет» — нужно для названий в отчёте.
-# ── Заклинания: открытие новых и карточки выбора (в отчёте нужны все названия).
-func get_spell_choices_all() -> Array:
-	return WeaponData.all_titles()
-
-## Короткая сводка по оружию — формат и поля берутся из WeaponData.
-func weapon_details(weapon_id: String) -> String:
-	return WeaponData.details(self, weapon_id)
+func get_available_evolutions() -> Array:
+	return upgrades.get_available_evolutions()
 
 func get_spell_choices() -> Array:
-	var remaining: Array = []
-	for def in WeaponData.LIST:
-		if not unlocked_weapons.has(str(def["id"])):
-			remaining.append({"id": str(def["id"]), "title": str(def["title"]), "desc": str(def["desc"])})
-	# Заклинаний больше, чем слотов (4) — показываем случайные 3.
-	remaining.shuffle()
-	return remaining.slice(0, mini(3, remaining.size()))
+	return upgrades.get_spell_choices()
+
+func get_level5_choices() -> Array:
+	return upgrades.get_level5_choices()
 
 func unlock_spell(spell_id: String) -> void:
-	if not unlocked_weapons.has(spell_id):
-		unlocked_weapons.append(spell_id)
-	if spell_id == "orbit":
-		weapons.rebuild_orbit_blades()
-	stats_changed.emit()
+	upgrades.unlock_spell(spell_id)
 
-# ── Урон заклинаний: чтение, подъём на 50% и готовая карточка «+50% урону».
-## Урон конкретного заклинания «как есть» (без общего множителя damage_mult).
-func weapon_damage(weapon_id: String) -> int:
-	var stat: String = str(WEAPON_DAMAGE_VARS.get(weapon_id, ""))
-	if stat == "":
-		return 0
-	return int(get(stat))
-
-## Поднять урон одного заклинания на LEVEL5_DAMAGE_BONUS (по умолчанию +50%).
-func boost_weapon_damage(weapon_id: String) -> Dictionary:
-	var stat: String = str(WEAPON_DAMAGE_VARS.get(weapon_id, ""))
-	if stat == "":
-		return {}
-	var before: int = int(get(stat))
-	# Минимум +1, иначе у слабых заклинаний бонус терялся в округлении.
-	var after: int = maxi(before + 1, int(round(float(before) * LEVEL5_DAMAGE_BONUS)))
-	set(stat, after)
-	if weapon_id == "orbit":
-		weapons.refresh_orbit_damage()
-	elif weapon_id == "saw":
-		pass # урон пилы передаётся при каждом спавне
-	stats_changed.emit()
-	return {"weapon": weapon_id, "before": before, "after": after}
-
-## Случайное из открытых заклинаний, у которого есть переменная урона.
-func random_boost_weapon() -> String:
-	var candidates: Array = []
-	for weapon_raw in unlocked_weapons:
-		var weapon_id: String = str(weapon_raw)
-		if WEAPON_DAMAGE_VARS.has(weapon_id):
-			candidates.append(weapon_id)
-	if candidates.is_empty():
-		return ""
-	return str(candidates[randi() % candidates.size()])
-
-## Карточка «+50% урона заклинанию» — заклинание выбирается случайно здесь,
-## чтобы игрок видел, у чего именно вырастет урон. id начинается с "boost:".
-func make_boost_card(weapon_id: String) -> Dictionary:
-	var weapon_name: String = Loc.t(WeaponData.title_of(weapon_id))
-	var before: int = weapon_damage(weapon_id)
-	var after: int = maxi(before + 1, int(round(float(before) * LEVEL5_DAMAGE_BONUS)))
-	return {
-		"id": "boost:%s" % weapon_id,
-		"title": Loc.t("Урон +50%%: %s") % weapon_name,
-		"desc": Loc.t("%d → %d урона") % [before, after],
-		"kind": "boost",
-	}
-
-## Выбор на 5-м уровне: [заклинание, усиление урона, заклинание].
-## Усиление всегда в центре (кнопка №2). Если заклинаний не хватает — добираем обычными картами.
-func get_level5_choices() -> Array:
-	var spells: Array = get_spell_choices()
-	var boost_weapon: String = random_boost_weapon()
-	var middle: Dictionary = {}
-	if boost_weapon != "":
-		middle = make_boost_card(boost_weapon)
-	var spare: Array = get_upgrade_choices(6)
-	var result: Array = []
-	if spells.size() >= 2 and not middle.is_empty():
-		var s0: Dictionary = (spells[0] as Dictionary).duplicate()
-		s0["kind"] = "spell"
-		var s1: Dictionary = (spells[1] as Dictionary).duplicate()
-		s1["kind"] = "spell"
-		result = [s0, middle, s1]
-	elif spells.size() >= 1 and not middle.is_empty():
-		var s0: Dictionary = (spells[0] as Dictionary).duplicate()
-		s0["kind"] = "spell"
-		result = [s0, middle, spare[0] if spare.size() > 0 else middle]
-	else:
-		# Заклинаний нет или усиление невозможно — обычные карты, усиление в центр.
-		for card in spare:
-			if result.size() >= 3:
-				break
-			if result.size() == 1 and not middle.is_empty():
-				result.append(middle)
-			result.append(card)
-		if result.size() < 3 and not middle.is_empty() and not result.has(middle):
-			result.insert(1, middle)
-	return result.slice(0, 3)
-
-# ── Применение улучшений: карточка → стата через _apply_stat_upgrade (op/value из данных).
 func apply_upgrade(upgrade_id: String) -> void:
-	# Карточка 5-го уровня: урон одному заклинанию.
-	if upgrade_id.begins_with("boost:"):
-		boost_weapon_damage(upgrade_id.trim_prefix("boost:"))
-		return
-	# Пассивка — отдельная ветка: у неё свои уровни.
-	if UpgradePool.is_passive_upgrade(upgrade_id):
-		apply_passive(upgrade_id.trim_prefix("passive_"))
-		return
-	if UpgradePool.is_evolution(upgrade_id):
-		unlock_evolution(upgrade_id)
-		return
-	var entry: Dictionary = UpgradePool.find_entry(upgrade_id)
-	if entry.is_empty():
-		return
-	_apply_stat_upgrade(entry)
+	upgrades.apply_upgrade(upgrade_id)
+
+func build_report() -> String:
+	return upgrades.build_report()
+
+# ── Сигналы наружу: статы меняет модуль прокачки, а подписчики живут на игроке.
+func emit_hp_changed() -> void:
 	hp_changed.emit(hp, max_hp)
+
+func emit_stats_changed() -> void:
 	stats_changed.emit()
-
-## Универсальное применение улучшения по описанию из данных.
-## op: add_int | mul_int | mul_float | mul_cooldown | sub_clamped | add_float | max_hp | heal
-func _apply_stat_upgrade(entry: Dictionary) -> void:
-	var op: String = str(entry.get("op", ""))
-	var value: float = float(entry.get("value", 0.0))
-	var stat: String = str(entry.get("stat", ""))
-	match op:
-		"add_int":
-			var grown: int = int(get(stat)) + int(value)
-			# Предел карты соблюдаем и при прямом применении, а не только в пуле.
-			if entry.has("cap"):
-				grown = mini(grown, int(entry["cap"]))
-			set(stat, grown)
-		"mul_int":
-			set(stat, int(ceil(float(get(stat)) * value)))
-		"mul_float":
-			set(stat, float(get(stat)) * value)
-		"mul_cooldown":
-			set(stat, maxf(float(entry.get("min", 0.2)), float(get(stat)) * value))
-		"sub_clamped":
-			set(stat, maxf(float(entry.get("min", 0.0)), float(get(stat)) - value))
-		"add_float":
-			set(stat, float(get(stat)) + value)
-		"set_int":
-			set(stat, int(value))
-		"set_float":
-			set(stat, value)
-		"max_hp":
-			max_hp += int(value)
-			heal(int(value))
-		"heal":
-			heal(int(value))
-	if entry.has("after"):
-		_run_weapon_hook(str(entry["after"]))
-
-## Пересчёт производных значений после смены статы (клинки держат урон у себя).
-func _run_weapon_hook(hook: String) -> void:
-	match hook:
-		"orbit_damage":
-			weapons.refresh_orbit_damage()
-		"orbit_rebuild":
-			weapons.rebuild_orbit_blades()
-		"orbit_size":
-			weapons.apply_orbit_size()
-
