@@ -16,6 +16,7 @@ extends MenuPanel
 @onready var fps_check: CheckButton = $VBox/Columns/Right/FpsCheck
 @onready var damage_numbers_check: CheckButton = $VBox/Columns/Left/EffectsBox/DamageNumbersCheck
 @onready var flashes_check: CheckButton = $VBox/Columns/Left/EffectsBox/FlashesCheck
+@onready var colorblind_check: CheckButton = $VBox/Columns/Left/ColorblindCheck
 @onready var lang_ru_button: Button = $VBox/Columns/Right/LanguageBox/RuButton
 @onready var lang_en_button: Button = $VBox/Columns/Right/LanguageBox/EnButton
 @onready var ui_small_button: Button = $VBox/Columns/Right/UIScaleBox/SmallButton
@@ -38,6 +39,7 @@ func _ready() -> void:
 	fps_check.toggled.connect(_on_fps_toggled)
 	damage_numbers_check.toggled.connect(_on_damage_numbers_toggled)
 	flashes_check.toggled.connect(_on_flashes_toggled)
+	colorblind_check.toggled.connect(_on_colorblind_toggled)
 	shake_normal_button.pressed.connect(_on_shake_selected.bind(0))
 	shake_low_button.pressed.connect(_on_shake_selected.bind(1))
 	shake_off_button.pressed.connect(_on_shake_selected.bind(2))
@@ -72,6 +74,7 @@ func refresh() -> void:
 	fps_check.set_pressed_no_signal(Records.settings_fps)
 	damage_numbers_check.set_pressed_no_signal(Records.settings_damage_numbers)
 	flashes_check.set_pressed_no_signal(Records.settings_flashes)
+	colorblind_check.set_pressed_no_signal(Records.settings_colorblind)
 	choice(shake_normal_button, Loc.t("Обычная"), Records.settings_shake == 0)
 	choice(shake_low_button, Loc.t("Слабая"), Records.settings_shake == 1)
 	choice(shake_off_button, Loc.t("Выключить"), Records.settings_shake == 2)
@@ -118,6 +121,11 @@ func _on_damage_numbers_toggled(enabled: bool) -> void:
 func _on_flashes_toggled(enabled: bool) -> void:
 	click(-10.0)
 	Records.set_flashes(enabled)
+
+## Палитра для дальтоников: опасность уходит в маджентовый, награда — в бело-голубой.
+func _on_colorblind_toggled(enabled: bool) -> void:
+	click(-10.0)
+	Records.set_colorblind(enabled)
 
 ## Тряска экрана: обычная / слабая / выключена (доступность — у некоторых она вызывает дискомфорт).
 func _on_shake_selected(mode_index: int) -> void:

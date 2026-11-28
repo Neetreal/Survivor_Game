@@ -96,6 +96,7 @@ var settings_quality: int = 1 # 0 низкое, 1 среднее, 2 высоко
 var settings_fps: bool = false # Показывать счётчик кадров в бою
 var settings_damage_numbers: bool = true # Цифры урона в бою
 var settings_flashes: bool = true # Вспышки экрана (тряска настраивается отдельно)
+var settings_colorblind: bool = false # Палитра для дальтоников (см. scripts/palette.gd)
 var settings_shake: int = 0 # 0 обычная, 1 слабая, 2 выключена
 var settings_ui_scale: int = 1 # 0 мелкий (90%), 1 обычный (100%), 2 крупный (120%)
 var settings_language: String = "ru" # ru / en
@@ -188,6 +189,7 @@ func load_records() -> void:
 	settings_screen_mode = int(cfg.get_value("settings", "screen_mode", 0))
 	settings_damage_numbers = bool(cfg.get_value("settings", "damage_numbers", true))
 	settings_flashes = bool(cfg.get_value("settings", "flashes", true))
+	settings_colorblind = bool(cfg.get_value("settings", "colorblind", false))
 	gold = int(cfg.get_value("meta", "gold", 0))
 	achievements = cfg.get_value("achievements", "unlocked", {})
 	var saved_profile = cfg.get_value("profile", "data", {})
@@ -241,6 +243,7 @@ func save_run(run_time: float, run_kills: int, run_level: int) -> bool:
 	cfg.set_value("settings", "screen_mode", settings_screen_mode)
 	cfg.set_value("settings", "damage_numbers", settings_damage_numbers)
 	cfg.set_value("settings", "flashes", settings_flashes)
+	cfg.set_value("settings", "colorblind", settings_colorblind)
 	cfg.set_value("meta", "gold", gold)
 	cfg.set_value("meta", "upgrades", meta_upgrades)
 	_apply_profile_sections(cfg)
@@ -376,6 +379,7 @@ func save_settings() -> void:
 	cfg.set_value("settings", "screen_mode", settings_screen_mode)
 	cfg.set_value("settings", "damage_numbers", settings_damage_numbers)
 	cfg.set_value("settings", "flashes", settings_flashes)
+	cfg.set_value("settings", "colorblind", settings_colorblind)
 	cfg.save(SAVE_PATH)
 
 func get_difficulty() -> Dictionary:
@@ -489,6 +493,12 @@ func show_floating_numbers() -> bool:
 ## Вспышки экрана: выключены — вспышка не рисуется совсем (тряска настраивается отдельно).
 func set_flashes(enabled: bool) -> void:
 	settings_flashes = enabled
+	save_settings()
+
+## Палитра для дальтоников: опасность/награда/своя магия расходятся по разным
+## цветовым семьям (подробности — в scripts/palette.gd).
+func set_colorblind(enabled: bool) -> void:
+	settings_colorblind = enabled
 	save_settings()
 
 func set_fps_counter(enabled: bool) -> void:

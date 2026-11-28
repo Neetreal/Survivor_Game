@@ -28,7 +28,7 @@ func _ready() -> void:
 		var wobble: float = 1.0 + sin(angle * 3.0 + randf() * 0.4) * 0.08
 		points.append(Vector2(cos(angle), sin(angle)) * radius * wobble)
 	visual.polygon = points
-	FxVisual.add_glow(self, Color(0.4, 0.9, 0.3), radius * 1.7, 0.35)
+	FxVisual.add_glow(self, Palette.poison(), radius * 1.7, 0.35)
 	life = duration
 
 func _process(delta: float) -> void:
@@ -36,7 +36,8 @@ func _process(delta: float) -> void:
 		return
 	pulse += delta
 	life -= delta
-	visual.color = Color(0.4, 0.9, 0.35, 0.22 + sin(pulse * 3.0) * 0.06)
+	var cloud_color: Color = Palette.poison()
+	visual.color = Color(cloud_color.r, cloud_color.g, cloud_color.b, 0.22 + sin(pulse * 3.0) * 0.06)
 	visual.rotation = sin(pulse * 0.8) * 0.15
 	if life <= 0.0:
 		queue_free()
@@ -49,4 +50,4 @@ func _process(delta: float) -> void:
 				continue
 			if global_position.distance_to(enemy.global_position) <= radius:
 				enemy.call("take_damage", damage, global_position, "poison")
-		FX.burst(global_position + Vector2(randf_range(-radius * 0.6, radius * 0.6), randf_range(-radius * 0.6, radius * 0.6)), Color(0.45, 0.95, 0.4), 3, 40.0)
+		FX.burst(global_position + Vector2(randf_range(-radius * 0.6, radius * 0.6), randf_range(-radius * 0.6, radius * 0.6)), Palette.poison_burst(), 3, 40.0)

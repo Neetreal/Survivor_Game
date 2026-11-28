@@ -532,6 +532,11 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 15
 text = "Вспышки экрана"
 
+[node name="ColorblindCheck" type="CheckButton" parent="SettingsPanel/VBox/Columns/Left"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Палитра для дальтоников"
+
 [node name="Right" type="VBoxContainer" parent="SettingsPanel/VBox/Columns"]
 layout_mode = 2
 size_flags_horizontal = 3

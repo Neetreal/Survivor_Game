@@ -33,18 +33,17 @@ func _ready() -> void:
 	player = get_tree().get_first_node_in_group("player")
 
 func apply_tier_visuals() -> void:
+	# Тир задаётся размером и цветом; цвета берутся из Palette — с включённой
+	# палитрой для дальтоников они уходят в бело-синюю гамму.
 	if gem_value >= 50:
 		scale = Vector2(2.1, 2.1)
-		FxVisual.set_color(body, visual, Color(1.0, 0.8, 0.25)) # золотой
 	elif gem_value >= 20:
 		scale = Vector2(1.7, 1.7)
-		FxVisual.set_color(body, visual, Color(0.85, 0.45, 1.0)) # фиолетовый
 	elif gem_value >= 5:
 		scale = Vector2(1.35, 1.35)
-		FxVisual.set_color(body, visual, Color(0.45, 1.0, 0.55)) # зелёный
 	else:
 		scale = Vector2(1.0, 1.0)
-		FxVisual.set_color(body, visual, Color(0.35, 0.9, 1.0)) # голубой
+	FxVisual.set_color(body, visual, Palette.gem(gem_value))
 
 func _physics_process(delta: float) -> void:
 	if player != null:
@@ -83,7 +82,7 @@ func try_merge() -> void:
 
 func collect() -> void:
 	AudioManager.play("gem", -12.0)
-	FX.burst(global_position, Color(0.5, 0.9, 1.0), 5, 70.0)
+	FX.burst(global_position, Palette.gem_burst(), 5, 70.0)
 	if player != null and player.has_method("add_xp"):
 		player.call("add_xp", gem_value)
 	queue_free()

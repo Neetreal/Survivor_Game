@@ -4,7 +4,7 @@ extends Area2D
 
 var slow_factor: float = 0.55 # Множитель скорости внутри зоны (0.55 = на 45% медленнее)
 var radius: float = 150.0
-var zone_color: Color = Color(0.16, 0.30, 0.20, 0.55)
+var zone_color: Color = Color(0.16, 0.30, 0.20, 0.55) # обычная палитра; см. _ready()
 var pulse_phase: float = 0.0
 
 @onready var visual: Polygon2D = $Visual
@@ -25,6 +25,7 @@ func _ready() -> void:
 		var angle: float = TAU * float(i) / float(segments)
 		points.append(Vector2(cos(angle), sin(angle)) * radius)
 	visual.polygon = points
+	zone_color = Palette.slow_zone()
 	visual.color = zone_color
 	edge.points = points
 	edge.default_color = Color(zone_color.r + 0.18, zone_color.g + 0.22, zone_color.b + 0.14, 0.5)

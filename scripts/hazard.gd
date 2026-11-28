@@ -46,13 +46,10 @@ func _ready() -> void:
 	_apply_visuals()
 
 func _apply_visuals() -> void:
-	if kind == "meteor":
-		# Опасная зона: оранжевый контур и пульсирующая заливка.
-		fill.color = Color(1.0, 0.45, 0.1, 0.18)
-		edge.default_color = Color(1.0, 0.6, 0.2, 0.85)
-	else:
-		fill.color = Color(0.85, 0.85, 0.95, 0.16)
-		edge.default_color = Color(0.8, 0.85, 1.0, 0.7)
+	# Цвета телеграфа — из Palette: с палитрой для дальтоников зона взрыва
+	# становится маджентовой, шипы — фиолетовыми (обе видны на любом фоне).
+	fill.color = Palette.hazard_fill(kind)
+	edge.default_color = Palette.hazard_edge(kind)
 
 func _process(delta: float) -> void:
 	if get_tree().paused:
@@ -87,10 +84,11 @@ func _trigger() -> void:
 	if kind == "meteor":
 		# Метеорит: разовый удар по площади + визуальный взрыв.
 		AudioManager.play("explosion", -6.0)
-		FX.burst(global_position, Color(1.0, 0.55, 0.2), 26, 220.0)
+		var impact_color: Color = Palette.danger_impact()
+		FX.burst(global_position, impact_color, 26, 220.0)
 		FX.shake(0.5, 4.0)
 		var ring = load("res://scenes/nova_ring.tscn").instantiate()
-		ring.configure(radius, global_position, Color(1.0, 0.5, 0.15))
+		ring.configure(radius, global_position, impact_color)
 		get_tree().current_scene.call_deferred("add_child", ring)
 		_damage_everyone(player_damage, enemy_damage, true)
 		queue_free()

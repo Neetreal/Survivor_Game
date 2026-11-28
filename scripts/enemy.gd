@@ -466,16 +466,16 @@ func healer_tick(delta: float) -> void:
 			healed_total += actual
 			healed_count += 1
 	if healed_count > 0:
-		FX.burst(global_position, Color(0.4, 1.0, 0.5), 10, 95.0)
+		FX.burst(global_position, Palette.heal(), 10, 95.0)
 		AudioManager.play("gem", -20.0, 1.4)
 
 func explode_on_death() -> void:
 	# Бомбардир — «не убивай меня рядом с собой».
 	AudioManager.play("explosion", -6.0)
-	FX.burst(global_position, Color(1.0, 0.6, 0.2), 26, 210.0)
+	FX.burst(global_position, Palette.danger_impact(), 26, 210.0)
 	FX.shake(0.45, 4.0)
 	var ring = NovaRingScene.instantiate()
-	ring.configure(130.0, global_position, Color(1.0, 0.5, 0.15))
+	ring.configure(130.0, global_position, Palette.danger_impact())
 	get_tree().current_scene.call_deferred("add_child", ring)
 	if player != null and player.has_method("take_damage"):
 		if global_position.distance_to(player.global_position) < 130.0:

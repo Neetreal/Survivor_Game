@@ -376,6 +376,7 @@ const EN: Dictionary = {
 	"Показ FPS": "Show FPS",
 	"Цифры урона": "Damage numbers",
 	"Вспышки экрана": "Screen flashes",
+	"Палитра для дальтоников": "Colorblind palette",
 	"Масштаб интерфейса": "Interface scale",
 	"Мелкий": "Small",
 	"Обычный": "Normal",

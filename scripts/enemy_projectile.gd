@@ -17,10 +17,15 @@ func configure(angle: float, dmg: int, spd: float, spawn_position: Vector2) -> v
 @onready var body: Sprite2D = $Body
 
 func _ready() -> void:
-	FxVisual.use_sprite(body, visual, "fx_venom")
-	FxVisual.add_glow(self, Color(0.45, 0.95, 0.4), 26.0, 0.5)
-	FxVisual.add_trail(self, Color(0.45, 0.95, 0.4), 5.0, 0.16)
-	FX.burst(global_position, Color(0.45, 0.95, 0.4), 3, 60.0)
+	var shot_color: Color = Palette.enemy_shot()
+	# Тинт спрайта только затемняет (modulate умножается), поэтому с включённой
+	# палитрой для дальтоников показываем фигуру чистого цвета палитры.
+	visual.color = shot_color
+	if not Palette.enabled():
+		FxVisual.use_sprite(body, visual, "fx_venom")
+	FxVisual.add_glow(self, shot_color, 26.0, 0.5)
+	FxVisual.add_trail(self, shot_color, 5.0, 0.16)
+	FX.burst(global_position, shot_color, 3, 60.0)
 	process_mode = Node.PROCESS_MODE_PAUSABLE
 	global_position = pending_position
 	body_entered.connect(_on_body_entered)
@@ -37,5 +42,5 @@ func _physics_process(delta: float) -> void:
 func _on_body_entered(body) -> void:
 	if body.is_in_group("player") and body.has_method("take_damage"):
 		body.call("take_damage", damage)
-		FX.burst(global_position, Color(0.45, 0.95, 0.4), 5, 90.0)
+		FX.burst(global_position, Palette.enemy_shot(), 5, 90.0)
 		queue_free()

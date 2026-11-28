@@ -3,17 +3,18 @@ extends Label
 
 var pending_text: String = "0"
 var pending_position: Vector2 = Vector2.ZERO
-var pending_color: Color = Color(1.0, 0.9, 0.35)
+var pending_heal: bool = false
 var life: float = 0.6
 
 func configure(value: int, spawn_position: Vector2) -> void:
 	pending_text = str(value)
 	pending_position = spawn_position
 
-## Зелёная цифра лечения: «+12».
+## Цифра лечения «+12»: зелёная, с палитрой для дальтоников — голубая.
+## Знак «+» остаётся главной подсказкой, цвет — второй.
 func configure_heal(value: int, spawn_position: Vector2) -> void:
 	pending_text = "+%d" % value
-	pending_color = Color(0.45, 1.0, 0.5)
+	pending_heal = true
 	pending_position = spawn_position
 
 func _ready() -> void:
@@ -21,7 +22,8 @@ func _ready() -> void:
 	text = pending_text
 	global_position = pending_position
 	add_theme_font_size_override("font_size", UIScale.font(16))
-	add_theme_color_override("font_color", pending_color)
+	# Цвет берём из палитры в момент показа: настройка «для дальтоников» успевает примениться.
+	add_theme_color_override("font_color", Palette.heal() if pending_heal else Palette.damage_text())
 	add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0))
 	add_theme_constant_override("outline_size", 4)
 
