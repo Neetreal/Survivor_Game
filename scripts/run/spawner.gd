@@ -5,12 +5,23 @@ extends Node
 # ── Ссылка на забег (main.gd): через неё берём игрока, HUD, время и лимит врагов.
 var m
 
+## События-формации («стая» и «окружение»). Раньше это были фиксированные 16 и 12
+## врагов каждые 45/60 с — на первой минуте экран заваливало толпой, которую
+## нечем было пробить. Теперь событие начинается с 3 врагов и растёт на одного
+## за каждую минуту забега, а между событиями — по 2 минуты (первое на 1:30).
+const EVENT_BASE_COUNT: int = 3 # Сколько врагов в самом первом событии
+const EVENT_COUNT_PER_MINUTE: float = 1.0 # Прирост врагов за минуту забега
+const EVENT_COUNT_MAX: int = 12 # Потолок события (дальше растёт обычный спавн)
+const EVENT_FIRST_STREAM: float = 90.0 # Первая «стая» — 1:30
+const EVENT_FIRST_RING: float = 150.0 # Первое «окружение» — 2:30
+const EVENT_INTERVAL: float = 120.0 # Между событиями одного типа — 2 минуты
+
 # ── Состояние спавна: свои таймеры, номер волны и флаг появления босса.
 var spawn_timer: float = 2.0
 var elite_timer: float = 75.0
-var event_timer: float = 60.0 # Кольцевое событие
+var event_timer: float = EVENT_FIRST_RING # Кольцевое событие («окружение»)
 var miniboss_timer: float = 120.0
-var stream_timer: float = 45.0
+var stream_timer: float = EVENT_FIRST_STREAM # Стая строем
 var wave_number: int = 0
 var boss_spawned: bool = false
 ## Сколько пожирателей уже создано, но ещё не попало в дерево сцены.
@@ -86,13 +97,14 @@ func _tick_spawn(delta: float) -> void:
 	stream_timer -= delta
 	if stream_timer <= 0.0:
 		spawn_stream_wave()
-		stream_timer = 45.0
+		stream_timer = EVENT_INTERVAL
 	# Кольцевое событие: враги окружают игрока
 	event_timer -= delta
 	if event_timer <= 0.0:
-		spawn_ring_event()
-		m.hud.announce(Loc.t("ВОЛНА: ОКРУЖЕНИЕ!"), Color(1.0, 0.7, 0.3))
-		event_timer = 60.0
+		# Объявляем, только если враги реально появились (потолок мог не пустить).
+		if spawn_ring_event() > 0:
+			m.hud.announce(Loc.t("ВОЛНА: ОКРУЖЕНИЕ!"), Color(1.0, 0.7, 0.3))
+		event_timer = EVENT_INTERVAL
 
 # ── Темп забега: интервал и размер волны, потолок врагов, рост HP со временем.
 ## Старт спокойный: первая волна через 2 с, потом интервал сокращается.
@@ -105,6 +117,12 @@ func current_spawn_interval() -> float:
 func current_batch_size() -> int:
 	var base: int = mini(6, 1 + int(m.elapsed_time / 60.0))
 	return maxi(1, int(round(float(base) * Records.difficulty_value("batch"))))
+
+## Сколько врагов в событии-формации: 3 в начале, +1 за каждую минуту забега,
+## потолок EVENT_COUNT_MAX. На 9-й минуте события выходят на максимум.
+func current_event_count() -> int:
+	var grown: int = EVENT_BASE_COUNT + int(m.elapsed_time / 60.0 * EVENT_COUNT_PER_MINUTE)
+	return clampi(grown, EVENT_BASE_COUNT, EVENT_COUNT_MAX)
 
 ## Потолок врагов на карте: в начале забега он ниже, к ~1.5 минуте выходит
 ## на максимум сложности. Так экран не забивается врагами за первую минуту.
@@ -265,7 +283,7 @@ func spawn_stream_wave() -> void:
 	# Стая идёт строем с одного края — заставляет двигаться, а не стоять в центре.
 	var alive: int = Enemies.count()
 	var allowed: int = maxi(0, current_enemy_cap() - alive)
-	var count: int = mini(16, allowed)
+	var count: int = mini(current_event_count(), allowed)
 	if count <= 0:
 		return
 	wave_number += 1
@@ -287,16 +305,18 @@ func spawn_stream_wave() -> void:
 		spawn_enemy_at("slime", pos)
 	m.hud.announce(Loc.t("ВОЛНА: СТАЯ!"), Color(0.6, 1.0, 0.6))
 
-func spawn_ring_event() -> void:
+## Возвращает, сколько врагов реально выставило кольцо.
+func spawn_ring_event() -> int:
 	var alive: int = Enemies.count()
 	var allowed: int = maxi(0, current_enemy_cap() - alive)
-	var count: int = mini(12, allowed)
+	var count: int = mini(current_event_count(), allowed)
 	for i in range(count):
-		var angle: float = TAU * float(i) / 12.0
+		var angle: float = TAU * float(i) / float(count)
 		var pos: Vector2 = m.player.global_position + Vector2(cos(angle), sin(angle)) * 520.0
 		pos.x = clampf(pos.x, -1550.0, 1550.0)
 		pos.y = clampf(pos.y, -1550.0, 1550.0)
 		spawn_enemy_at("slime", pos)
+	return count
 
 # ── Точка появления: за пределами экрана, но внутри границ арены.
 func random_spawn_position() -> Vector2:
